@@ -91,25 +91,21 @@
       async function drawNumber() {
         if (myNumber !== null) return;
 
-        const { data, error: readError } = await supabase
-          .from('queue')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1);
+      const { error: insertError } = await supabase
+  .from('queue')
+  .insert([{ number: newNumber, date: today }]);
 
-        const lastNumber = data && data.length > 0 ? data[0].number : 0;
-        const newNumber = lastNumber + 1;
+if (insertError) {
+  alert("Fehler beim Einfügen: " + insertError.message);
+  console.error("Supabase INSERT Error:", insertError);
+} else {
+  localStorage.setItem("myNumber", newNumber);
+  localStorage.setItem("myDate", today);
+  document.getElementById("yourNumber").textContent = newNumber;
+  document.getElementById("drawButton").disabled = true;
+  getCurrentNumber();
+}
 
-        const { error: insertError } = await supabase
-          .from('queue')
-          .insert([{ number: newNumber, date: today }]);
-
-        if (!insertError) {
-          localStorage.setItem("myNumber", newNumber);
-          localStorage.setItem("myDate", today);
-          document.getElementById("yourNumber").textContent = newNumber;
-          document.getElementById("drawButton").disabled = true;
-          getCurrentNumber();
         }
       }
 

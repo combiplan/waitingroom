@@ -2,60 +2,54 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Patientenansicht – Warteschlangen-App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warteraum</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      margin-top: 30px;
-      padding: 10px;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    .container {
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 3em;
+      margin-bottom: 30px;
     }
     .number-display {
-      font-size: 6em;
-      margin: 30px;
+      font-size: 8em;
+      margin: 20px 0;
+      color: #333;
+    }
+    .timestamp {
+      font-size: 1.2em;
+      color: #666;
+      margin-bottom: 30px;
     }
     button {
       font-size: 2em;
       padding: 15px 30px;
-      margin: 20px;
-    }
-    .box {
-      border: 2px solid #888;
-      padding: 30px;
-      width: 90%;
-      max-width: 400px;
-      margin: auto;
-      border-radius: 15px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 20px;
-    }
-    h2 {
-      font-size: 2em;
-      margin-bottom: 15px;
+      margin: 20px auto;
+      display: block;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-  <h1>Warteschlangen-System</h1>
-  <div class="box">
-    <h2>Patient</h2>
-    <button id="drawButton">Nummer ziehen</button>
-    <div style="font-size: 1.5em; margin-top: 20px;">Deine Nummer:</div>
+  <div class="container">
+    <h1>Warteraum</h1>
     <div class="number-display" id="yourNumber">--</div>
-    <div style="font-size: 1.5em; margin-top: 30px;">Aktuelle Nummer:</div>
-    <div class="number-display" id="currentNumber">0</div>
+    <div class="timestamp" id="timestamp">Noch keine Nummer gezogen</div>
+    <button id="drawButton">Nummer ziehen</button>
   </div>
 
   <script>
     window.onload = () => {
       const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
-      //const supabaseKey = "DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
-
+      const supabaseKey = "const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";";
       const client = supabase.createClient(supabaseUrl, supabaseKey);
 
       function getToday() {
@@ -65,30 +59,26 @@
 
       let myNumber = localStorage.getItem("myNumber");
       let myDate = localStorage.getItem("myDate");
+      let myTime = localStorage.getItem("myTime");
       const today = getToday();
 
-      async function getCurrentNumber() {
-        const { data, error } = await client
-          .from('queue')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1);
-        if (data && data.length > 0) {
-          document.getElementById("currentNumber").textContent = data[0].number;
-        }
+      function updateUI() {
+        document.getElementById("yourNumber").textContent = myNumber || "--";
+        document.getElementById("timestamp").textContent = myTime
+          ? "Gezogen um: " + myTime
+          : "Noch keine Nummer gezogen";
+        document.getElementById("drawButton").disabled = myNumber !== null;
       }
 
-      getCurrentNumber();
-      setInterval(getCurrentNumber, 3000);
-
-      if (myDate === today && myNumber !== null) {
-        document.getElementById("yourNumber").textContent = myNumber;
-        document.getElementById("drawButton").disabled = true;
-      } else {
+      if (myDate !== today) {
         localStorage.removeItem("myNumber");
         localStorage.removeItem("myDate");
+        localStorage.removeItem("myTime");
         myNumber = null;
+        myTime = null;
       }
+
+      updateUI();
 
       async function drawNumber() {
         if (myNumber !== null) return;
@@ -101,20 +91,23 @@
 
         const lastNumber = data && data.length > 0 ? data[0].number : 0;
         const newNumber = lastNumber + 1;
+        const timestamp = new Date();
+        const isoString = timestamp.toISOString();
 
         const { error: insertError } = await client
           .from('queue')
-          .insert([{ number: newNumber, created_at: new Date().toISOString() }]);
+          .insert([{ number: newNumber, date: today, created_at: isoString }]);
 
         if (insertError) {
           alert("Fehler beim Einfügen: " + insertError.message);
           console.error("Supabase INSERT Error:", insertError);
         } else {
-          localStorage.setItem("myNumber", newNumber);
+          myNumber = newNumber;
+          myTime = new Date().toLocaleTimeString();
+          localStorage.setItem("myNumber", myNumber);
           localStorage.setItem("myDate", today);
-          document.getElementById("yourNumber").textContent = newNumber;
-          document.getElementById("drawButton").disabled = true;
-          getCurrentNumber();
+          localStorage.setItem("myTime", myTime);
+          updateUI();
         }
       }
 

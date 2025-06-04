@@ -91,7 +91,7 @@
       async function drawNumber() {
         if (myNumber !== null) return;
 
-      const { error: insertError } = await supabase
+       const { error: insertError } = await supabase
   .from('queue')
   .insert([{ number: newNumber, date: today }]);
 
@@ -106,7 +106,6 @@ if (insertError) {
   getCurrentNumber();
 }
 
-        }
       }
 
       document.getElementById("drawButton").addEventListener("click", drawNumber);

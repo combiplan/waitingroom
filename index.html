@@ -1,86 +1,120 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Kartentausch Warteschlangen App</title>
+  <meta charset="UTF-8">
+  <title>Patientenansicht – Warteschlangen-App</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      margin-top: 50px;
+      margin-top: 30px;
+      padding: 10px;
     }
     .number-display {
-      font-size: 4em;
-      margin: 20px;
+      font-size: 6em;
+      margin: 30px;
     }
     button {
-      font-size: 1.5em;
-      padding: 10px 20px;
-      margin: 10px;
+      font-size: 2em;
+      padding: 15px 30px;
+      margin: 20px;
     }
     .box {
-      border: 1px solid #ccc;
-      padding: 20px;
-      width: 300px;
+      border: 2px solid #888;
+      padding: 30px;
+      width: 90%;
+      max-width: 400px;
       margin: auto;
-      border-radius: 10px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+    h2 {
+      font-size: 2em;
+      margin-bottom: 15px;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
   <h1>Warteschlangen-System</h1>
   <div class="box">
     <h2>Patient</h2>
-    <button id="drawButton" onclick="drawNumber()">Nummer ziehen</button>
-    <div>Deine Nummer:</div>
+    <button id="drawButton">Nummer ziehen</button>
+    <div style="font-size: 1.5em; margin-top: 20px;">Deine Nummer:</div>
     <div class="number-display" id="yourNumber">--</div>
-    <div>Aktuelle Nummer:</div>
+    <div style="font-size: 1.5em; margin-top: 30px;">Aktuelle Nummer:</div>
     <div class="number-display" id="currentNumber">0</div>
   </div>
 
   <script>
-    // Hilfsfunktion: aktuelles Datum als yyyy-mm-dd
-    function getToday() {
-      const d = new Date();
-      return d.toISOString().split('T')[0];
-    }
+    window.onload = () => {
+      const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
+      const supabaseKey = "DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
+      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let lastNumber = parseInt(localStorage.getItem("lastNumber")) || 0;
-    let currentNumber = parseInt(localStorage.getItem("currentNumber")) || 0;
-    let myNumber = localStorage.getItem("myNumber");
-    let myDate = localStorage.getItem("myDate");
-    const today = getToday();
-
-    document.getElementById("currentNumber").textContent = currentNumber;
-
-    // Prüfe, ob Patient heute schon gezogen hat
-    if (myDate === today && myNumber !== null) {
-      document.getElementById("yourNumber").textContent = myNumber;
-      document.getElementById("drawButton").disabled = true;
-    } else {
-      // Falls nicht heute, zurücksetzen
-      localStorage.removeItem("myNumber");
-      localStorage.removeItem("myDate");
-      myNumber = null;
-    }
-
-    function drawNumber() {
-      if (myNumber === null) {
-        lastNumber++;
-        localStorage.setItem("lastNumber", lastNumber);
-        localStorage.setItem("myNumber", lastNumber);
-        localStorage.setItem("myDate", today);
-        document.getElementById("yourNumber").textContent = lastNumber;
-        document.getElementById("drawButton").disabled = true;
-        myNumber = lastNumber;
+      function getToday() {
+        const d = new Date();
+        return d.toISOString().split('T')[0];
       }
-    }
 
-    // Synchronisiere aktuelle Nummer alle 2 Sekunden
-    setInterval(() => {
-      let updatedCurrent = localStorage.getItem("currentNumber") || 0;
-      document.getElementById("currentNumber").textContent = updatedCurrent;
-    }, 2000);
+      let myNumber = localStorage.getItem("myNumber");
+      let myDate = localStorage.getItem("myDate");
+      const today = getToday();
+
+      async function getCurrentNumber() {
+        const { data, error } = await supabase
+          .from('queue')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) {
+          document.getElementById("currentNumber").textContent = data[0].number;
+        }
+      }
+
+      getCurrentNumber();
+      setInterval(getCurrentNumber, 3000);
+
+      if (myDate === today && myNumber !== null) {
+        document.getElementById("yourNumber").textContent = myNumber;
+        document.getElementById("drawButton").disabled = true;
+      } else {
+        localStorage.removeItem("myNumber");
+        localStorage.removeItem("myDate");
+        myNumber = null;
+      }
+
+      async function drawNumber() {
+        if (myNumber !== null) return;
+
+        const { data, error: readError } = await supabase
+          .from('queue')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const lastNumber = data && data.length > 0 ? data[0].number : 0;
+        const newNumber = lastNumber + 1;
+
+        const { error: insertError } = await supabase
+          .from('queue')
+          .insert([{ number: newNumber, date: today }]);
+
+        if (!insertError) {
+          localStorage.setItem("myNumber", newNumber);
+          localStorage.setItem("myDate", today);
+          document.getElementById("yourNumber").textContent = newNumber;
+          document.getElementById("drawButton").disabled = true;
+          getCurrentNumber();
+        }
+      }
+
+      document.getElementById("drawButton").addEventListener("click", drawNumber);
+    }
   </script>
 </body>
 </html>

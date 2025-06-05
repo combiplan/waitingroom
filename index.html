@@ -66,8 +66,8 @@
       function updateUI() {
         document.getElementById("yourNumber").textContent = myNumber || "--";
         document.getElementById("timestamp").textContent = myTime
-        document.getElementById("date").textContent = myDate
-          ? "Getting a number on: " +myDate + myTime
+          //? "Getting a number on: " + myTime
+          ? "Getting a number on: " + today
           : "No number yet";
         document.getElementById("drawButton").disabled = myNumber !== null;
       }

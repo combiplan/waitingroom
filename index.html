@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KARTENTAUSCH Waiting room L8</title>
+  <title>Kartentausch Waiting room L8</title>
   <style>
     body {
       font-family: sans-serif;
@@ -41,7 +41,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>KARTENTAUSCH Waiting room L8</h1>
+    <h1>Kartentausch Waiting room L8</h1>
     <div class="number-display" id="yourNumber">--</div>
     <div class="timestamp" id="timestamp">No number yet</div>
     <button id="drawButton">Click here to get a number</button>
@@ -66,8 +66,8 @@
       function updateUI() {
         document.getElementById("yourNumber").textContent = myNumber || "--";
         document.getElementById("timestamp").textContent = myTime
-          //? "Getting a number on: " + myTime
-          ? "Getting a number on: " + new Date(myTime).toLocaleString('de-DE')
+        document.getElementById("date").textContent = myDate
+          ? "Getting a number on: " +myDate + myTime
           : "No number yet";
         document.getElementById("drawButton").disabled = myNumber !== null;
       }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Warteraum</title>
+  <title>KARTENTAUSCH Waiting room L8</title>
   <style>
     body {
       font-family: sans-serif;
@@ -40,10 +40,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>Warteraum</h1>
+    <h1>KARTENTAUSCH Waiting room L8</h1>
     <div class="number-display" id="yourNumber">--</div>
-    <div class="timestamp" id="timestamp">Noch keine Nummer gezogen</div>
-    <button id="drawButton">Nummer ziehen</button>
+    <div class="timestamp" id="timestamp">No number yet</div>
+    <button id="drawButton">Click here to get a number</button>
   </div>
 
   <script>
@@ -65,8 +65,8 @@
       function updateUI() {
         document.getElementById("yourNumber").textContent = myNumber || "--";
         document.getElementById("timestamp").textContent = myTime
-          ? "Gezogen um: " + myTime
-          : "Noch keine Nummer gezogen";
+          ? "Getting a number on: " + myTime
+          : "No number yet";
         document.getElementById("drawButton").disabled = myNumber !== null;
       }
 
@@ -99,7 +99,7 @@
           .insert([{ number: newNumber, date: today, created_at: isoString }]);
 
         if (insertError) {
-          alert("Fehler beim Einfügen: " + insertError.message);
+          alert("Error at insert: " + insertError.message);
           console.error("Supabase INSERT Error:", insertError);
         } else {
           myNumber = newNumber;

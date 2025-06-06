@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Einlasskontrolle – Warteschlange</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 30px;
+      background-color: #f5f9ff;
+    }
+    .box {
+      background: white;
+      border-radius: 15px;
+      padding: 40px 20px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .big-number {
+      font-size: 5em;
+      font-weight: bold;
+      color: #3366cc;
+      margin: 20px 0;
+    }
+    .info {
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+    .warning {
+      color: #b30000;
+      font-size: 1.3em;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div class="box" id="content">
+    <div class="info">🔄 Lade deine Wartedaten...</div>
+  </div>
+
+  <script>
+    async function fetchQueueEntry() {
+      const deviceId = localStorage.getItem("device_id");
+      const box = document.getElementById("content");
+
+      if (!deviceId) {
+        box.innerHTML = "<div class='warning'>⚠️ Leider konnten wir dein Gerät nicht erkennen.<br>Bitte ziehe zuerst eine Nummer.</div>";
+        return;
+      }
+
+      const supabase = supabase.createClient(
+        "https://anjuypoheypwalafesgl.supabase.co",
+        "DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ"
+      );
+
+      const today = new Date().toISOString().split("T")[0];
+
+      const { data, error } = await supabase
+        .from("queue")
+        .select("number, created_at")
+        .eq("device_id", deviceId)
+        .gte("created_at", today + "T00:00:00")
+        .lte("created_at", today + "T23:59:59")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        const number = data[0].number;
+        const createdAt = new Date(data[0].created_at);
+        const timeStr = createdAt.toLocaleString("de-DE", {
+          day: "2-digit", month: "long", year: "numeric",
+          hour: "2-digit", minute: "2-digit"
+        });
+
+        box.innerHTML = `
+          <div class='info'>🎟️ Deine Wartenummer</div>
+          <div class='big-number'>${number}</div>
+          <div class='info'>⏰ Gezogen am: ${timeStr}</div>
+        `;
+      } else {
+        box.innerHTML = "<div class='warning'>⚠️ Du hast heute noch keine Nummer gezogen.<br>Bitte gehe zuerst zum Empfang.</div>";
+      }
+    }
+
+    fetchQueueEntry();
+  </script>
+</body>
+</html>

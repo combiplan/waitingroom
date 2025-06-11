@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Warteraum</title>
+  <title>Waiting Room L8</title>
   <style>
     body {
       font-family: sans-serif;
@@ -42,10 +42,10 @@
   <div class="container">
     <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 200px; margin-bottom: 20px;">
     <h1>Waiting Room L8</h1>
-    <p><strong>Ein Gerät kann pro Tag nur eine Nummer ziehen.</strong><br>Nummern sind fortlaufend und einzigartig pro Tag.</p>
+    <p><strong>Welcom to our Exchange Office. Please consider that we change only one time per Person.</strong><br>Waiting numbers are unique.</p>
     <div class="number-display" id="yourNumber">--</div>
-    <div class="timestamp" id="timestamp">Noch keine Nummer gezogen</div>
-    <button id="drawButton">Nummer ziehen</button>
+    <div class="timestamp" id="timestamp">No number yet</div>
+    <button id="drawButton">Click to get a number</button>
   </div>
 
   <script>
@@ -80,8 +80,8 @@
       function updateUI() {
         document.getElementById("yourNumber").textContent = myNumber || "--";
         document.getElementById("timestamp").textContent = myTime
-          ? "Gezogen um: " + myTime
-          : "Noch keine Nummer gezogen";
+          ? "Get a number at: " + myTime
+          : "No number yet";
 
         const btn = document.getElementById("drawButton");
         if (myNumber !== null) {
@@ -113,12 +113,12 @@
           .limit(1);
 
         if (checkError) {
-          alert("Fehler bei der Prüfung: " + checkError.message);
+          alert("Error bei der Prüfung: " + checkError.message);
           return;
         }
 
         if (existing.length > 0) {
-          alert("Dieses Gerät hat heute bereits eine Nummer gezogen.");
+          alert("You've already received a number today.");
           return;
         }
 

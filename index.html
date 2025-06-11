@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kartentausch Waiting room L8</title>
+  <title>Warteraum</title>
   <style>
     body {
       font-family: sans-serif;
@@ -33,7 +33,6 @@
       font-size: 2em;
       padding: 15px 30px;
       margin: 20px auto;
-      background-color: #add8e6;  /* Hellblau */
       display: block;
     }
   </style>
@@ -41,51 +40,84 @@
 </head>
 <body>
   <div class="container">
-    <h1>Kartentausch Waiting room L8</h1>
+    <h1>Warteraum</h1>
+    <p><strong>Ein Gerät kann pro Tag nur eine Nummer ziehen.</strong><br>Die Nummer wird lokal gespeichert und mit einer eindeutigen Geräte-ID bei Supabase abgeglichen.</p>
     <div class="number-display" id="yourNumber">--</div>
-    <div class="timestamp" id="timestamp">No number yet</div>
-    <button id="drawButton">Click here to get a number</button>
+    <div class="timestamp" id="timestamp">Noch keine Nummer gezogen</div>
+    <button id="drawButton">Nummer ziehen</button>
   </div>
 
   <script>
     window.onload = () => {
+      // Supabase-Initialisierung
       const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
+      const supabaseKey = "DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
       const client = supabase.createClient(supabaseUrl, supabaseKey);
 
+      // Hilfsfunktionen
       function getToday() {
-        const d = new Date();
-        return d.toISOString().split('T')[0];
+        return new Date().toISOString().split('T')[0];
       }
 
+      // Geräte-ID erzeugen (einmalig) und lokal speichern
+      function getDeviceId() {
+        let id = localStorage.getItem("deviceId");
+        if (!id) {
+          id = crypto.randomUUID(); // erzeugt eindeutige Gerätekennung
+          localStorage.setItem("deviceId", id);
+        }
+        return id;
+      }
+
+      // Lokale Variablen laden
       let myNumber = localStorage.getItem("myNumber");
       let myDate = localStorage.getItem("myDate");
       let myTime = localStorage.getItem("myTime");
       const today = getToday();
 
+      // UI aktualisieren
       function updateUI() {
         document.getElementById("yourNumber").textContent = myNumber || "--";
         document.getElementById("timestamp").textContent = myTime
-          ? "Getting a number on: " + myTime
-          //? "Getting a number on: " + today.toLocaleString('de-DE')
-          : "No number yet";
+          ? "Gezogen um: " + myTime
+          : "Noch keine Nummer gezogen";
         document.getElementById("drawButton").disabled = myNumber !== null;
       }
 
+      // Falls Datum nicht mehr aktuell → reset
       if (myDate !== today) {
         localStorage.removeItem("myNumber");
         localStorage.removeItem("myDate");
         localStorage.removeItem("myTime");
         myNumber = null;
         myTime = null;
-        document.getElementById("drawButton").style.backgroundColor = "#cccccc";  // z.B. Hellgrau
       }
 
       updateUI();
 
+      // Hauptfunktion zum Ziehen der Nummer
       async function drawNumber() {
-        if (myNumber !== null) return;
+        const deviceId = getDeviceId();
 
+        // Prüfen, ob dieses Gerät heute schon gezogen hat
+        const { data: existing, error: checkError } = await client
+          .from('queue')
+          .select('*')
+          .eq('date', today)
+          .eq('device_id', deviceId)
+          .limit(1);
+
+        if (checkError) {
+          alert("Fehler bei der Prüfung: " + checkError.message);
+          return;
+        }
+
+        if (existing.length > 0) {
+          alert("Dieses Gerät hat heute bereits eine Nummer gezogen.");
+          return;
+        }
+
+        // Letzte vergebene Nummer abrufen
         const { data, error: readError } = await client
           .from('queue')
           .select('*')
@@ -97,16 +129,23 @@
         const timestamp = new Date();
         const isoString = timestamp.toISOString();
 
+        // Neue Nummer einfügen inkl. Geräte-ID
         const { error: insertError } = await client
           .from('queue')
-          .insert([{ number: newNumber, date: today, created_at: isoString }]);
+          .insert([{
+            number: newNumber,
+            date: today,
+            created_at: isoString,
+            device_id: deviceId
+          }]);
 
         if (insertError) {
-          alert("Error at insert: " + insertError.message);
+          alert("Fehler beim Einfügen: " + insertError.message);
           console.error("Supabase INSERT Error:", insertError);
         } else {
+          // Lokale Speicherung und UI-Aktualisierung
           myNumber = newNumber;
-          myTime = new Date().toLocaleTimeString();
+          myTime = timestamp.toLocaleTimeString();
           localStorage.setItem("myNumber", myNumber);
           localStorage.setItem("myDate", today);
           localStorage.setItem("myTime", myTime);
@@ -114,6 +153,7 @@
         }
       }
 
+      // Button-Klick registrieren
       document.getElementById("drawButton").addEventListener("click", drawNumber);
     };
   </script>

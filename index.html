@@ -77,11 +77,18 @@
 
       // UI aktualisieren
       function updateUI() {
-        document.getElementById("yourNumber").textContent = myNumber || "--";
-        document.getElementById("timestamp").textContent = myTime
-          ? "Gezogen um: " + myTime
-          : "Noch keine Nummer gezogen";
-        document.getElementById("drawButton").disabled = myNumber !== null;
+      document.getElementById("yourNumber").textContent = myNumber || "--";
+      document.getElementById("timestamp").textContent = myTime
+        ? "Gezogen um: " + myTime
+        : "Noch keine Nummer gezogen";
+
+      const btn = document.getElementById("drawButton");
+      if (myNumber !== null) {
+        btn.style.display = "none";
+      } else {
+        btn.style.display = "block";
+      }  
+
       }
 
       // Falls Datum nicht mehr aktuell → reset

@@ -63,134 +63,135 @@
   </div>
 
   <script>
-    window.onload = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const weekParam = urlParams.get("woche");
-      if (!weekParam) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const weekParam = urlParams.get("woche");
+    if (!weekParam) {
+      window.addEventListener("DOMContentLoaded", () => {
         document.getElementById("drawButton").style.display = "none";
         document.getElementById("yourNumber").style.display = "none";
         document.getElementById("timestamp").style.display = "none";
         document.getElementById("errorMessage").style.display = "block";
-        return;
-      }
+      });
+    } else {
+      window.onload = () => {
+        const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
+        const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-      const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
-      const client = supabase.createClient(supabaseUrl, supabaseKey);
-
-      function getToday() {
-        return new Date().toISOString().split('T')[0];
-      }
-
-      function getDeviceId() {
-        let id = localStorage.getItem("deviceId");
-        if (!id) {
-          id = crypto.randomUUID();
-          localStorage.setItem("deviceId", id);
-        }
-        return id;
-      }
-
-      let myNumber = localStorage.getItem("myNumber");
-      let myDate = localStorage.getItem("myDate");
-      let myTime = localStorage.getItem("myTime");
-      const today = getToday();
-
-      function updateUI() {
-        document.getElementById("yourNumber").textContent = myNumber || "--";
-        document.getElementById("timestamp").textContent = myTime
-          ? "You received a number at: " + myTime
-          : "No number yet";
-
-        const btn = document.getElementById("drawButton");
-        btn.style.display = myNumber !== null ? "none" : "block";
-      }
-
-      if (myDate !== today) {
-        localStorage.removeItem("myNumber");
-        localStorage.removeItem("myDate");
-        localStorage.removeItem("myTime");
-        myNumber = null;
-        myTime = null;
-      }
-
-      updateUI();
-
-      async function drawNumber() {
-        const deviceId = getDeviceId();
-
-        const { data: existing, error: checkError } = await client
-          .from('queue')
-          .select('*')
-          .eq('date', today)
-          .eq('device_id', deviceId)
-          .limit(1);
-
-        if (checkError) {
-          alert("Error bei der Prüfung: " + checkError.message);
-          return;
+        function getToday() {
+          return new Date().toISOString().split('T')[0];
         }
 
-        if (existing.length > 0) {
-          alert("You've already received a number today.");
-          return;
+        function getDeviceId() {
+          let id = localStorage.getItem("deviceId");
+          if (!id) {
+            id = crypto.randomUUID();
+            localStorage.setItem("deviceId", id);
+          }
+          return id;
         }
 
-        let success = false;
-        let attempts = 0;
+        let myNumber = localStorage.getItem("myNumber");
+        let myDate = localStorage.getItem("myDate");
+        let myTime = localStorage.getItem("myTime");
+        const today = getToday();
 
-        while (!success && attempts < 5) {
-          attempts++;
+        function updateUI() {
+          document.getElementById("yourNumber").textContent = myNumber || "--";
+          document.getElementById("timestamp").textContent = myTime
+            ? "You received a number at: " + myTime
+            : "No number yet";
 
-          const { data: latest, error: readError } = await client
+          const btn = document.getElementById("drawButton");
+          btn.style.display = myNumber !== null ? "none" : "block";
+        }
+
+        if (myDate !== today) {
+          localStorage.removeItem("myNumber");
+          localStorage.removeItem("myDate");
+          localStorage.removeItem("myTime");
+          myNumber = null;
+          myTime = null;
+        }
+
+        updateUI();
+
+        async function drawNumber() {
+          const deviceId = getDeviceId();
+
+          const { data: existing, error: checkError } = await client
             .from('queue')
-            .select('number')
+            .select('*')
             .eq('date', today)
-            .order('number', { ascending: false })
+            .eq('device_id', deviceId)
             .limit(1);
 
-          if (readError) {
-            alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
+          if (checkError) {
+            alert("Error bei der Prüfung: " + checkError.message);
             return;
           }
 
-          const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
-          const newNumber = lastNumber + 1;
-          const timestamp = new Date();
-          const isoString = timestamp.toISOString();
-
-          const { error: insertError } = await client
-            .from('queue')
-            .insert([{
-              number: newNumber,
-              date: today,
-              created_at: isoString,
-              device_id: deviceId
-            }]);
-
-          if (!insertError) {
-            myNumber = newNumber;
-            myTime = timestamp.toLocaleTimeString();
-            localStorage.setItem("myNumber", myNumber);
-            localStorage.setItem("myDate", today);
-            localStorage.setItem("myTime", myTime);
-            updateUI();
-            success = true;
-          } else if (insertError.code === "23505") {
-            await new Promise(r => setTimeout(r, 100));
-          } else {
-            alert("Fehler beim Einfügen: " + insertError.message);
+          if (existing.length > 0) {
+            alert("You've already received a number today.");
             return;
+          }
+
+          let success = false;
+          let attempts = 0;
+
+          while (!success && attempts < 5) {
+            attempts++;
+
+            const { data: latest, error: readError } = await client
+              .from('queue')
+              .select('number')
+              .eq('date', today)
+              .order('number', { ascending: false })
+              .limit(1);
+
+            if (readError) {
+              alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
+              return;
+            }
+
+            const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
+            const newNumber = lastNumber + 1;
+            const timestamp = new Date();
+            const isoString = timestamp.toISOString();
+
+            const { error: insertError } = await client
+              .from('queue')
+              .insert([{
+                number: newNumber,
+                date: today,
+                created_at: isoString,
+                device_id: deviceId
+              }]);
+
+            if (!insertError) {
+              myNumber = newNumber;
+              myTime = timestamp.toLocaleTimeString();
+              localStorage.setItem("myNumber", myNumber);
+              localStorage.setItem("myDate", today);
+              localStorage.setItem("myTime", myTime);
+              updateUI();
+              success = true;
+            } else if (insertError.code === "23505") {
+              await new Promise(r => setTimeout(r, 100));
+            } else {
+              alert("Fehler beim Einfügen: " + insertError.message);
+              return;
+            }
+          }
+
+          if (!success) {
+            alert("Fehler: Konnte keine eindeutige Nummer ziehen. Bitte erneut versuchen.");
           }
         }
 
-        if (!success) {
-          alert("Fehler: Konnte keine eindeutige Nummer ziehen. Bitte erneut versuchen.");
-        }
-      }
-
-      document.getElementById("drawButton").addEventListener("click", drawNumber);
-    };
+        document.getElementById("drawButton").addEventListener("click", drawNumber);
+      };
+    }
   </script>
 </body>
 </html>

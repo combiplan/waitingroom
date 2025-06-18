@@ -5,59 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Waiting Room L8</title>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-      background-color: #f9f9f9;
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
     }
-    .container {
-      padding: 40px 20px;
-    }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 30px;
-    }
-    .number-display {
-      font-size: 8em;
-      margin: 20px 0;
-      color: #333;
-    }
-    .timestamp {
-      font-size: 1.2em;
-      color: #666;
-      margin-bottom: 30px;
-    }
-    button {
-      font-size: 2em;
-      padding: 15px 30px;
-      margin: 20px auto;
-      display: block;
-    }
-    .error-message {
-      font-size: 1.5em;
-      color: red;
-      margin-top: 50px;
-    }
-  
+
     @media screen and (max-width: 480px) {
       button {
         font-size: 1.5em;
         padding: 10px 20px;
-        width: 100%;
+        width: 95vw;
+        max-width: 95vw;
         box-sizing: border-box;
         margin: 20px auto;
+        display: block;
       }
-
-      .container {
-        padding: 20px 10px;
-      }
-
-      .number-display {
-        font-size: 5em;
-      }
-    }
 
       .container {
         padding: 20px 10px;

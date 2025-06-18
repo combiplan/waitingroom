@@ -46,13 +46,7 @@
   <div class="container">
     <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 200px; margin-bottom: 20px;">
     <h2>Waiting Room L8</h2>
-    <div id="weekInfo" style="margin: 20px 0; font-size: 1.2em; color: #333;"></div>
-
-    <!-- QR-Code zur aktuellen Woche -->
-    <div class="qr-container">
-      <h3>Wöchentlicher QR-Code</h3>
-      <canvas id="weeklyQrCode"></canvas>
-    </div>
+    <div id="weekInfo" style="margin: 15px 0; font-size: 1.2em; color: #333;"></div>
 
     <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
     <div style="margin-bottom: 20px;">
@@ -189,7 +183,7 @@
       const query = new URLSearchParams(window.location.search);
       const weekParam = query.get("woche");
       if (weekParam) {
-        document.getElementById("weekInfo").textContent = `Warteschlange für Woche ${weekParam}`;
+        document.getElementById("weekInfo").textContent = `Week ${weekParam}`;
       }
       const fullUrl = window.location.href;
       QRCode.toCanvas(document.getElementById("weeklyQrCode"), fullUrl, { width: 200 }, function (error) {

@@ -35,20 +35,32 @@
       margin: 20px auto;
       display: block;
     }
+    .qr-container {
+      margin: 30px 0;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
   <div class="container">
     <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 200px; margin-bottom: 20px;">
     <h2>Waiting Room L8</h2>
+    <div id="weekInfo" style="margin: 20px 0; font-size: 1.2em; color: #333;"></div>
+
+    <!-- QR-Code zur aktuellen Woche -->
+    <div class="qr-container">
+      <h3>Wöchentlicher QR-Code</h3>
+      <canvas id="weeklyQrCode"></canvas>
+    </div>
+
     <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
-    <!-- Neuer Link -->
-  <div style="margin-bottom: 20px;">
-    <a href="https://offen-muenchen.de/" target="_blank">
-      Link to other exchange offices
-    </a>
-  </div>
+    <div style="margin-bottom: 20px;">
+      <a href="https://offen-muenchen.de/" target="_blank">
+        Link to other exchange offices
+      </a>
+    </div>
+
     <div class="number-display" id="yourNumber">--</div>
     <div class="timestamp" id="timestamp">No number yet</div>
     <button id="drawButton">Click to get a number</button>
@@ -56,9 +68,7 @@
 
   <script>
     window.onload = () => {
-      // Supabase-Verbindung
       const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
-      //const supabaseKey = "DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
       const client = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -71,9 +81,6 @@
         if (!id) {
           id = crypto.randomUUID();
           localStorage.setItem("deviceId", id);
-          console.log("Neue device_id erzeugt:", id);
-        } else {
-          console.log("Vorhandene device_id:", id);
         }
         return id;
       }
@@ -90,11 +97,7 @@
           : "No number yet";
 
         const btn = document.getElementById("drawButton");
-        if (myNumber !== null) {
-          btn.style.display = "none";
-        } else {
-          btn.style.display = "block";
-        }
+        btn.style.display = myNumber !== null ? "none" : "block";
       }
 
       if (myDate !== today) {
@@ -110,7 +113,6 @@
       async function drawNumber() {
         const deviceId = getDeviceId();
 
-        // Prüfen: Hat dieses Gerät heute schon gezogen?
         const { data: existing, error: checkError } = await client
           .from('queue')
           .select('*')
@@ -128,7 +130,6 @@
           return;
         }
 
-        // Retry-Mechanismus zur Vermeidung von Race Conditions
         let success = false;
         let attempts = 0;
 
@@ -152,8 +153,6 @@
           const timestamp = new Date();
           const isoString = timestamp.toISOString();
 
-          console.log(`Versuch ${attempts}: Nummer ${newNumber}`);
-
           const { error: insertError } = await client
             .from('queue')
             .insert([{
@@ -172,12 +171,9 @@
             updateUI();
             success = true;
           } else if (insertError.code === "23505") {
-            console.warn("Nummer bereits vergeben – versuche es erneut...");
-            // Warten zwischen den Versuchen (optional)
             await new Promise(r => setTimeout(r, 100));
           } else {
             alert("Fehler beim Einfügen: " + insertError.message);
-            console.error("Supabase INSERT Error:", insertError);
             return;
           }
         }
@@ -188,6 +184,17 @@
       }
 
       document.getElementById("drawButton").addEventListener("click", drawNumber);
+
+      // QR-Code erzeugen
+      const query = new URLSearchParams(window.location.search);
+      const weekParam = query.get("woche");
+      if (weekParam) {
+        document.getElementById("weekInfo").textContent = `Warteschlange für Woche ${weekParam}`;
+      }
+      const fullUrl = window.location.href;
+      QRCode.toCanvas(document.getElementById("weeklyQrCode"), fullUrl, { width: 200 }, function (error) {
+        if (error) console.error(error);
+      });
     };
   </script>
 </body>

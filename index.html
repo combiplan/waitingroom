@@ -40,6 +40,23 @@
       color: red;
       margin-top: 50px;
     }
+  
+    @media screen and (max-width: 480px) {
+      button {
+        font-size: 1.5em;
+        padding: 10px 20px;
+        width: 90%;
+      }
+
+      .container {
+        padding: 20px 10px;
+      }
+
+      .number-display {
+        font-size: 5em;
+      }
+    }
+
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
@@ -57,6 +74,7 @@
 
     <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze den offiziellen QR-Code mit Wochenkennung.</div>
 
+    <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
     <div class="number-display" id="yourNumber">--</div>
     <div class="timestamp" id="timestamp">No number yet</div>
     <button id="drawButton">Click to get a number</button>
@@ -74,6 +92,7 @@
       });
     } else {
       window.onload = () => {
+        document.getElementById("weekDisplay").textContent = "Woche: " + weekParam;
         const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
         const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
         const client = supabase.createClient(supabaseUrl, supabaseKey);

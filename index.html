@@ -183,14 +183,21 @@
 
   const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
 
-  if (lastNumber >= maxNumber) {
-    // 👉 Hier Meldung anzeigen statt Nummer
-    document.getElementById("yourNumber").textContent = "—";
-    document.getElementById("timestamp").textContent = "Heute sind wir leider voll!";
-    document.getElementById("drawButton").style.display = "none";
-    return;
-  }
+ 
+if (lastNumber >= maxNumber) {
+  const numberDisplay = document.getElementById("yourNumber");
+  numberDisplay.textContent = "We are full! Today no number anymore available - we can not change for you!";
+  numberDisplay.style.color = "hotpink";   // pinke Schrift
+  numberDisplay.style.fontSize = "3em";    // große Schrift
 
+  document.getElementById("timestamp").style.display = "none";
+  document.getElementById("drawButton").style.display = "none";
+  return;
+}
+
+
+
+          
   // Wenn noch Platz ist → neue Nummer ziehen
   const newNumber = lastNumber + 1;
   const timestamp = new Date();

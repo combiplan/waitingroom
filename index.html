@@ -147,77 +147,76 @@
         updateUI();
 
         async function drawNumber() {
-          const deviceId = getDeviceId();
+  const deviceId = getDeviceId();
 
-          const { data: existing, error: checkError } = await client
-            .from('queue')
-            .select('*')
-            .eq('date', today)
-            .eq('device_id', deviceId)
-            .limit(1);
+  const { data: existing, error: checkError } = await client
+    .from('queue')
+    .select('*')
+    .eq('date', today)
+    .eq('device_id', deviceId)
+    .limit(1);
 
-          if (checkError) {
-            alert("Error bei der Prüfung: " + checkError.message);
-            return;
-          }
+  if (checkError) {
+    alert("Error bei der Prüfung: " + checkError.message);
+    return;
+  }
 
-          if (existing.length > 0) {
-            alert("You've already received a number today.");
-            return;
-          }
+  if (existing.length > 0) {
+    alert("Du hast heute schon eine Nummer bekommen.");
+    return;
+  }
 
-          let success = false;
-          let attempts = 0;
+  // 👉 Hier die maximale Anzahl festlegen
+  const maxNumber = 100;
 
-          while (!success && attempts < 5) {
-            attempts++;
+  const { data: latest, error: readError } = await client
+    .from('queue')
+    .select('number')
+    .eq('date', today)
+    .order('number', { ascending: false })
+    .limit(1);
 
-            const { data: latest, error: readError } = await client
-              .from('queue')
-              .select('number')
-              .eq('date', today)
-              .order('number', { ascending: false })
-              .limit(1);
+  if (readError) {
+    alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
+    return;
+  }
 
-            if (readError) {
-              alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
-              return;
-            }
+  const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
 
-            const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
-            const newNumber = lastNumber + 1;
-            const timestamp = new Date();
-            const isoString = timestamp.toISOString();
+  if (lastNumber >= maxNumber) {
+    // 👉 Hier Meldung anzeigen statt Nummer
+    document.getElementById("yourNumber").textContent = "—";
+    document.getElementById("timestamp").textContent = "Heute sind wir leider voll!";
+    document.getElementById("drawButton").style.display = "none";
+    return;
+  }
 
-            const { error: insertError } = await client
-              .from('queue')
-              .insert([{
-                number: newNumber,
-                date: today,
-                created_at: isoString,
-                device_id: deviceId
-              }]);
+  // Wenn noch Platz ist → neue Nummer ziehen
+  const newNumber = lastNumber + 1;
+  const timestamp = new Date();
+  const isoString = timestamp.toISOString();
 
-            if (!insertError) {
-              myNumber = newNumber;
-              myTime = timestamp.toLocaleTimeString();
-              localStorage.setItem("myNumber", myNumber);
-              localStorage.setItem("myDate", today);
-              localStorage.setItem("myTime", myTime);
-              updateUI();
-              success = true;
-            } else if (insertError.code === "23505") {
-              await new Promise(r => setTimeout(r, 100));
-            } else {
-              alert("Fehler beim Einfügen: " + insertError.message);
-              return;
-            }
-          }
+  const { error: insertError } = await client
+    .from('queue')
+    .insert([{
+      number: newNumber,
+      date: today,
+      created_at: isoString,
+      device_id: deviceId
+    }]);
 
-          if (!success) {
-            alert("Fehler: Konnte keine eindeutige Nummer ziehen. Bitte erneut versuchen.");
-          }
-        }
+  if (!insertError) {
+    myNumber = newNumber;
+    myTime = timestamp.toLocaleTimeString();
+    localStorage.setItem("myNumber", myNumber);
+    localStorage.setItem("myDate", today);
+    localStorage.setItem("myTime", myTime);
+    updateUI();
+  } else {
+    alert("Fehler beim Einfügen: " + insertError.message);
+  }
+}
+
 
         document.getElementById("drawButton").addEventListener("click", drawNumber);
       };

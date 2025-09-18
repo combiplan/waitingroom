@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Waiting Room L8</title>
+
+  <!-- dekorative Schrift von Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     body {
       font-family: sans-serif;
@@ -15,59 +19,43 @@
     .container {
       padding: 40px 20px;
     }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 30px;
-    }
+    h1 { font-size: 3em; margin-bottom: 30px; }
+    /* normale Textdarstellung (für Accessibility / Fallback) */
     .number-display {
       font-size: 8em;
       margin: 20px 0;
-      color: #333;
+      color: #ff69b4; /* hot pink */
+      font-family: "Cinzel Decorative", serif;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.08);
+      letter-spacing: 6px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
-    .timestamp {
-      font-size: 1.2em;
-      color: #666;
-      margin-bottom: 30px;
+
+    /* Canvas (ersetzt/überlagert die .number-display auf modernen Browsern) */
+    #numberCanvas {
+      display: block;
+      margin: 0 auto;
+      width: min(90%, 720px);
+      height: auto; /* Höhe wird per JS gesetzt */
     }
+
+    .timestamp { font-size: 1.2em; color: #666; margin-bottom: 30px; }
+
     button {
       font-size: 2em;
       padding: 15px 30px;
       margin: 20px auto;
       display: block;
     }
-    .error-message {
-      font-size: 1.5em;
-      color: red;
-      margin-top: 50px;
-    }
-  
+
+    .error-message { font-size: 1.5em; color: red; margin-top: 50px; }
+
     @media screen and (max-width: 480px) {
-      button {
-        font-size: 1.5em;
-        padding: 10px 20px;
-        width: 100%;
-        box-sizing: border-box;
-        margin: 20px auto;
-      }
-
-      .container {
-        padding: 20px 10px;
-      }
-
-      .number-display {
-        font-size: 5em;
-      }
+      button { font-size: 1.5em; padding: 10px 20px; width: 100%; box-sizing: border-box; margin: 20px auto; }
+      .container { padding: 20px 10px; }
+      .number-display { font-size: 5em; letter-spacing: 4px; }
     }
-
-      .container {
-        padding: 20px 10px;
-      }
-
-      .number-display {
-        font-size: 5em;
-      }
-    }
-
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
@@ -75,159 +63,241 @@
   <div class="container">
     <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 20px;">
     <h2>Waiting Room L8</h2>
-
     <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
     <div style="margin-bottom: 20px;">
-      <a href="https://offen-muenchen.de/" target="_blank">
-        Link to other exchange offices
-      </a>
+      <a href="https://offen-muenchen.de/" target="_blank">Link to other exchange offices</a>
     </div>
 
     <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze den offiziellen QR-Code mit Wochenkennung.</div>
 
     <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
-    <div class="number-display" id="yourNumber">--</div>
+
+    <!-- Fallback-Text (für Screenreader und wenn Canvas nicht unterstützt wird) -->
+    <div class="number-display" id="yourNumber" aria-hidden="false">--</div>
+
+    <!-- Canvas-Rendering: pink, dekorative Schrift, Rauschen + leichter Verzerrung -->
+    <canvas id="numberCanvas" aria-hidden="true"></canvas>
+
     <div class="timestamp" id="timestamp">No number yet</div>
     <button id="drawButton">Click to get a number</button>
   </div>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const weekParam = urlParams.get("woche");
-    if (!weekParam) {
-      window.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("drawButton").style.display = "none";
-        document.getElementById("yourNumber").style.display = "none";
-        document.getElementById("timestamp").style.display = "none";
-        document.getElementById("errorMessage").style.display = "block";
-      });
-    } else {
-      window.onload = () => {
-        document.getElementById("weekDisplay").textContent = "Woche: " + weekParam;
-        const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
-        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
-        const client = supabase.createClient(supabaseUrl, supabaseKey);
-
-        function getToday() {
-          return new Date().toISOString().split('T')[0];
-        }
-
-        function getDeviceId() {
-          let id = localStorage.getItem("deviceId");
-          if (!id) {
-            id = crypto.randomUUID();
-            localStorage.setItem("deviceId", id);
-          }
-          return id;
-        }
-
-        let myNumber = localStorage.getItem("myNumber");
-        let myDate = localStorage.getItem("myDate");
-        let myTime = localStorage.getItem("myTime");
-        const today = getToday();
-
-        function updateUI() {
-          document.getElementById("yourNumber").textContent = myNumber || "--";
-          document.getElementById("timestamp").textContent = myTime
-            ? "You received a number at: " + myTime
-            : "No number yet";
-
-          const btn = document.getElementById("drawButton");
-          btn.style.display = myNumber !== null ? "none" : "block";
-        }
-
-        if (myDate !== today) {
-          localStorage.removeItem("myNumber");
-          localStorage.removeItem("myDate");
-          localStorage.removeItem("myTime");
-          myNumber = null;
-          myTime = null;
-        }
-
-        updateUI();
-
-        async function drawNumber() {
-  const deviceId = getDeviceId();
-
-  const { data: existing, error: checkError } = await client
-    .from('queue')
-    .select('*')
-    .eq('date', today)
-    .eq('device_id', deviceId)
-    .limit(1);
-
-  if (checkError) {
-    alert("Error bei der Prüfung: " + checkError.message);
-    return;
-  }
-
-  if (existing.length > 0) {
-    alert("Du hast heute schon eine Nummer bekommen.");
-    return;
-  }
-
-  // 👉 Hier die maximale Anzahl festlegen
-  const maxNumber = 120;
-
-  const { data: latest, error: readError } = await client
-    .from('queue')
-    .select('number')
-    .eq('date', today)
-    .order('number', { ascending: false })
-    .limit(1);
-
-  if (readError) {
-    alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
-    return;
-  }
-
-  const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
-
- 
-if (lastNumber >= maxNumber) {
-  const numberDisplay = document.getElementById("yourNumber");
-  numberDisplay.textContent = "We are full! Today no number anymore available - we can not change for you!";
-  numberDisplay.style.color = "hotpink";   // pinke Schrift
-  numberDisplay.style.fontSize = "3em";    // große Schrift
-
-  document.getElementById("timestamp").style.display = "none";
-  document.getElementById("drawButton").style.display = "none";
-  return;
-}
-
-
-
-          
-  // Wenn noch Platz ist → neue Nummer ziehen
-  const newNumber = lastNumber + 1;
-  const timestamp = new Date();
-  const isoString = timestamp.toISOString();
-
-  const { error: insertError } = await client
-    .from('queue')
-    .insert([{
-      number: newNumber,
-      date: today,
-      created_at: isoString,
-      device_id: deviceId
-    }]);
-
-  if (!insertError) {
-    myNumber = newNumber;
-    myTime = timestamp.toLocaleTimeString();
-    localStorage.setItem("myNumber", myNumber);
-    localStorage.setItem("myDate", today);
-    localStorage.setItem("myTime", myTime);
-    updateUI();
+<script>
+  // --- Supabase + Basislogik wie zuvor (nur leicht angepasst) ---
+  const urlParams = new URLSearchParams(window.location.search);
+  const weekParam = urlParams.get("woche");
+  if (!weekParam) {
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("drawButton").style.display = "none";
+      document.getElementById("yourNumber").style.display = "none";
+      document.getElementById("timestamp").style.display = "none";
+      document.getElementById("errorMessage").style.display = "block";
+    });
   } else {
-    alert("Fehler beim Einfügen: " + insertError.message);
+    window.onload = () => {
+      document.getElementById("weekDisplay").textContent = "Woche: " + weekParam;
+      const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
+      const supabaseKey = "PASTE_YOUR_KEY";
+      const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+      function getToday() { return new Date().toISOString().split('T')[0]; }
+      function getDeviceId() {
+        let id = localStorage.getItem("deviceId");
+        if (!id) { id = crypto.randomUUID(); localStorage.setItem("deviceId", id); }
+        return id;
+      }
+
+      let myNumber = localStorage.getItem("myNumber");
+      let myDate = localStorage.getItem("myDate");
+      let myTime = localStorage.getItem("myTime");
+      const today = getToday();
+
+      // Canvas-Rendering-Funktion (macht Anzeige schwerer per Copy/Paste zu fälschen)
+      function renderNumberCanvas(number) {
+        const canvas = document.getElementById('numberCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Größe anlegen (hohe Auflösung für schärfere Datei)
+        const width = Math.min(window.innerWidth * 0.9, 900);
+        const height = Math.max(160, width * 0.3);
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(width * ratio);
+        canvas.height = Math.floor(height * ratio);
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+        // Hintergrund leicht texturiert
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+
+        // Rausch-Overlay (viele kleine Punkte)
+        const noiseAmount = Math.floor((width * height) / 1200);
+        for (let i = 0; i < noiseAmount; i++) {
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          ctx.fillStyle = 'rgba(0,0,0,' + (Math.random() * 0.06) + ')';
+          ctx.fillRect(x, y, 1, 1);
+        }
+
+        // leichte diagonale Linien als Sicherheitsmuster
+        ctx.strokeStyle = 'rgba(0,0,0,0.02)';
+        ctx.lineWidth = 1;
+        for (let x = -width; x < width * 2; x += 30) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x - 0.5 * width, height);
+          ctx.stroke();
+        }
+
+        // Text in dekorativer Schrift: pink, mit Schatten und leichtem Zeichen-Offset
+        const fontSize = Math.floor(height * 0.7);
+        // Verwende die gleiche Schrift wie im CSS (Browser lädt Google Font; wenn nicht verfügbar, Fallback)
+        ctx.font = `${fontSize}px "Cinzel Decorative", serif`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        // Zeichne jeden Charakter leicht rotierend/verschoben (schwieriger zu fälschen)
+        const txt = String(number);
+        const charGap = fontSize * 0.08;
+        let x = centerX - ((txt.length - 1) * (fontSize * 0.45)) / 2;
+        for (let i = 0; i < txt.length; i++) {
+          const ch = txt[i];
+          const rot = (Math.random() - 0.5) * 0.08; // ± small rotation
+          const yOffset = (Math.random() - 0.5) * (fontSize * 0.06);
+          ctx.save();
+          ctx.translate(x, centerY + yOffset);
+          ctx.rotate(rot);
+          // Schatten
+          ctx.fillStyle = 'rgba(0,0,0,0.18)';
+          ctx.fillText(ch, 3, 6);
+          // Hauptfarbe (pink)
+          ctx.fillStyle = '#ff69b4';
+          ctx.fillText(ch, 0, 0);
+          ctx.restore();
+          x += fontSize * 0.55 + charGap;
+        }
+
+        // Zeitstempel unten links (kleiner)
+        ctx.font = `${Math.floor(fontSize * 0.18)}px sans-serif`;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.textAlign = 'left';
+        const stamp = new Date().toLocaleString();
+        ctx.fillText(stamp, 10, height - 10);
+
+        // Optional: Wasserzeichen Device-ID-Kürzel rechts unten (nicht komplett sichtbar)
+        const dev = getDeviceId();
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillText(dev.slice(0,8), width - 10, height - 10);
+      }
+
+      function updateUI() {
+        // Fallback-Text (für Screenreader / copy)
+        document.getElementById("yourNumber").textContent = myNumber || "--";
+        document.getElementById("timestamp").textContent = myTime
+          ? "You received a number at: " + myTime
+          : "No number yet";
+
+        const btn = document.getElementById("drawButton");
+        btn.style.display = myNumber !== null ? "none" : "block";
+
+        // Canvas rendern (wenn Zahl vorhanden)
+        if (myNumber) {
+          renderNumberCanvas(myNumber);
+          // canvas sichtbar, Text als aria-fallback erhalten
+          document.getElementById('numberCanvas').style.display = 'block';
+        } else {
+          document.getElementById('numberCanvas').style.display = 'none';
+        }
+      }
+
+      if (myDate !== today) {
+        localStorage.removeItem("myNumber");
+        localStorage.removeItem("myDate");
+        localStorage.removeItem("myTime");
+        myNumber = null;
+        myTime = null;
+      }
+
+      updateUI();
+
+      async function drawNumber() {
+        const deviceId = getDeviceId();
+
+        const { data: existing, error: checkError } = await client
+          .from('queue')
+          .select('*')
+          .eq('date', today)
+          .eq('device_id', deviceId)
+          .limit(1);
+
+        if (checkError) { alert("Error bei der Prüfung: " + checkError.message); return; }
+        if (existing && existing.length > 0) { alert("Du hast heute schon eine Nummer bekommen."); return; }
+
+        const maxNumber = 120;
+        const { data: latest, error: readError } = await client
+          .from('queue')
+          .select('number')
+          .eq('date', today)
+          .order('number', { ascending: false })
+          .limit(1);
+
+        if (readError) { alert("Fehler beim Lesen der letzten Nummer: " + readError.message); return; }
+
+        const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
+        if (lastNumber >= maxNumber) {
+          const numberDisplay = document.getElementById("yourNumber");
+          numberDisplay.textContent = "We are full! Today no number anymore available - we can not change for you!";
+          // zusätzlich Canvas-Message
+          const canvas = document.getElementById('numberCanvas');
+          const ctx = canvas.getContext && canvas.getContext('2d');
+          if (ctx) {
+            canvas.style.display = 'block';
+            canvas.width = 800; canvas.height = 120;
+            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width, canvas.height);
+            ctx.font = '28px sans-serif';
+            ctx.fillStyle = 'hotpink';
+            ctx.fillText('Heute sind leider keine Nummern mehr verfügbar', 20, 60);
+          }
+          document.getElementById("timestamp").style.display = "none";
+          document.getElementById("drawButton").style.display = "none";
+          return;
+        }
+
+        const newNumber = lastNumber + 1;
+        const timestamp = new Date();
+        const isoString = timestamp.toISOString();
+
+        const { error: insertError } = await client
+          .from('queue')
+          .insert([{
+            number: newNumber,
+            date: today,
+            created_at: isoString,
+            device_id: deviceId
+          }]);
+
+        if (!insertError) {
+          myNumber = newNumber;
+          myTime = timestamp.toLocaleTimeString();
+          localStorage.setItem("myNumber", myNumber);
+          localStorage.setItem("myDate", today);
+          localStorage.setItem("myTime", myTime);
+          updateUI();
+        } else {
+          alert("Fehler beim Einfügen: " + insertError.message);
+        }
+      }
+
+      document.getElementById("drawButton").addEventListener("click", drawNumber);
+      // Re-render bei Resize (Canvas anpassen)
+      window.addEventListener('resize', () => { if (myNumber) renderNumberCanvas(myNumber); });
+    };
   }
-}
-
-
-        document.getElementById("drawButton").addEventListener("click", drawNumber);
-      };
-    }
-  </script>
+</script>
 </body>
 </html>

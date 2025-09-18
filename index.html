@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Waiting Room L8</title>
+
+  <!-- GEÄNDERT: Google Font hinzufügen (visuell markante Schrift) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"> <!-- GEÄNDERT -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> <!-- GEÄNDERT -->
+  <!-- GEÄNDERT: 'UnifrakturCook' ist eine sehr markante Schrift; alternativ 'Rubik Mono One' wenn moderner gewünscht -->
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet"> <!-- GEÄNDERT -->
+
   <style>
     body {
       font-family: sans-serif;
@@ -19,11 +26,18 @@
       font-size: 3em;
       margin-bottom: 30px;
     }
+
+    /* GEÄNDERT: Nummer-Anzeige optisch auffällig & schwerer zu fälschen */
     .number-display {
       font-size: 8em;
       margin: 20px 0;
-      color: #333;
+      color: hotpink;                                /* GEÄNDERT: pinke Schrift standardmäßig */
+      font-family: 'UnifrakturCook', sans-serif;     /* GEÄNDERT: markante Schrift für Nummern */
+      -webkit-text-stroke: 1px rgba(120,0,60,0.4);   /* GEÄNDERT: dezenter Kontur-Effekt */
+      text-shadow: 0 2px 0 rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.06); /* GEÄNDERT: leichter Schatten */
+      letter-spacing: 0.02em;                        /* GEÄNDERT: leichtes Tracking für Erkennbarkeit */
     }
+
     .timestamp {
       font-size: 1.2em;
       color: #666;

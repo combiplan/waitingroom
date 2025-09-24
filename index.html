@@ -20,11 +20,6 @@
     .container {
       padding: 40px 20px;
     }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 30px;
-    }
-
     .number-display {
       font-size: 8em;
       margin: 20px 0;
@@ -35,13 +30,11 @@
       text-shadow: 0 2px 0 rgba(0,0,0,0.06), 0 6px 12px rgba(0,0,0,0.04);
       letter-spacing: 0.02em;
     }
-
     .timestamp {
       font-size: 1.2em;
       color: #666;
       margin-bottom: 30px;
     }
-
     button {
       font-size: 2em;
       padding: 15px 30px;
@@ -49,7 +42,7 @@
       display: block;
       font-family: 'Rubik', sans-serif;
       font-weight: 700;
-      background-color: #66ccff;   /* hellblau */
+      background-color: #66ccff;
       color: white;
       border: none;
       border-radius: 12px;
@@ -63,30 +56,11 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-
     .error-message {
       font-size: 1.5em;
       color: red;
       margin-top: 50px;
       font-family: 'Rubik', sans-serif;
-    }
-  
-    @media screen and (max-width: 480px) {
-      button {
-        font-size: 1.5em;
-        padding: 10px 20px;
-        width: 100%;
-        box-sizing: border-box;
-        margin: 20px auto;
-      }
-
-      .container {
-        padding: 20px 10px;
-      }
-
-      .number-display {
-        font-size: 5em;
-      }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -127,7 +101,7 @@
     } else {
       window.onload = () => {
         document.getElementById("weekDisplay").textContent = "Woche: " + weekParam;
-        const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
+         const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
         const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
         const client = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -150,21 +124,22 @@
         const today = getToday();
 
         function updateUI() {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const btn = document.getElementById("drawButton");
+          const info = document.getElementById("timeInfo");
+
           document.getElementById("yourNumber").textContent = myNumber || "--";
           document.getElementById("timestamp").textContent = myTime
             ? "You received a number at: " + myTime
             : "No number yet";
 
-          const btn = document.getElementById("drawButton");
-          const info = document.getElementById("timeInfo");
-
-          const now = new Date();
-          const currentHour = now.getHours();
-
+          // vor 12 Uhr immer deaktivieren
           if (currentHour < 12) {
             btn.disabled = true;
             info.textContent = "Nummernvergabe erst ab 12:00 Uhr möglich.";
           } else {
+            // nach 12 Uhr: prüfen ob schon eine Nummer gezogen wurde
             if (myNumber !== null) {
               btn.style.display = "none";
               info.textContent = "";
@@ -175,7 +150,7 @@
           }
         }
 
-        // falls Daten nicht von heute sind -> reset
+        // Reset, falls nicht von heute
         if (myDate !== today) {
           localStorage.removeItem("myNumber");
           localStorage.removeItem("myDate");
@@ -186,7 +161,7 @@
 
         updateUI();
 
-        // GEÄNDERT: prüft jede Minute, ob es schon 12 Uhr ist
+        // prüft jede Minute erneut
         setInterval(updateUI, 60000);
 
         async function drawNumber() {

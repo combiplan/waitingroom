@@ -99,24 +99,30 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-  <div class="container">
-    <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 20px;">
-    <h2>Waiting Room L8</h2>
 
-    <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
-    <div style="margin-bottom: 20px;">
-      <a href="https://offen-muenchen.de/" target="_blank">
-        Link to other exchange offices
-      </a>
-    </div>
+<div class="container">
+  <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 20px;">
+  <h2>Waiting Room L8</h2>
 
-    <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze der offizielle QR-Code mit Wochenkennung.</div>
-
-    <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
-    <div class="number-display" id="yourNumber">--</div>
-    <div class="timestamp" id="timestamp">No number yet</div>
-    <button id="drawButton">Click to get a number</button>
+  <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
+  <div style="margin-bottom: 20px;">
+    <a href="https://offen-muenchen.de/" target="_blank">
+      Link to other exchange offices
+    </a>
   </div>
+
+  <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze der offizielle QR-Code mit Wochenkennung.</div>
+
+  <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
+  <div class="number-display" id="yourNumber">--</div>
+  <div class="timestamp" id="timestamp">No number yet</div>
+
+  <!-- GEÄNDERT: Button disabled by default -->
+  <button id="drawButton" disabled>Click to get a number</button>
+
+  <!-- GEÄNDERT: Hinweistext -->
+  <div id="timeInfo" style="margin-top:10px; font-size:1.1em; color:#555;"></div>
+</div>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);

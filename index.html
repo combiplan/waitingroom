@@ -42,7 +42,6 @@
       margin-bottom: 30px;
     }
 
-    /* GEÄNDERT: Button-Hintergrund auf hellblau + weiße Schrift */
     button {
       font-size: 2em;
       padding: 15px 30px;
@@ -50,15 +49,19 @@
       display: block;
       font-family: 'Rubik', sans-serif;
       font-weight: 700;
-      background-color: #66ccff;  /* GEÄNDERT: hellblau */
-      color: white;               /* GEÄNDERT: weiße Schrift */
-      border: none;               /* GEÄNDERT: Rahmen entfernt */
-      border-radius: 12px;        /* GEÄNDERT: abgerundete Ecken */
-      cursor: pointer;            /* GEÄNDERT: Mauszeiger */
-      transition: background-color 0.2s ease; /* GEÄNDERT: weiches Hover */
+      background-color: #66ccff;   /* hellblau */
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
     }
-    button:hover {                /* GEÄNDERT: Hover-Effekt */
+    button:hover:enabled {
       background-color: #3399ff;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .error-message {
@@ -85,48 +88,35 @@
         font-size: 5em;
       }
     }
-
-      .container {
-        padding: 20px 10px;
-      }
-
-      .number-display {
-        font-size: 5em;
-      }
-    }
-
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
+  <div class="container">
+    <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 20px;">
+    <h2>Waiting Room L8</h2>
 
-<div class="container">
-  <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 20px;">
-  <h2>Waiting Room L8</h2>
+    <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
+    <div style="margin-bottom: 20px;">
+      <a href="https://offen-muenchen.de/" target="_blank">
+        Link to other exchange offices
+      </a>
+    </div>
 
-  <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>
-  <div style="margin-bottom: 20px;">
-    <a href="https://offen-muenchen.de/" target="_blank">
-      Link to other exchange offices
-    </a>
+    <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze den offiziellen QR-Code mit Wochenkennung.</div>
+
+    <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
+    <div class="number-display" id="yourNumber">--</div>
+    <div class="timestamp" id="timestamp">No number yet</div>
+
+    <button id="drawButton" disabled>Click to get a number</button>
+    <div id="timeInfo" style="margin-top:10px; font-size:1.1em; color:#555;"></div>
   </div>
-
-  <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze der offizielle QR-Code mit Wochenkennung.</div>
-
-  <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
-  <div class="number-display" id="yourNumber">--</div>
-  <div class="timestamp" id="timestamp">No number yet</div>
-
-  <!-- GEÄNDERT: Button disabled by default -->
-  <button id="drawButton" disabled>Click to get a number</button>
-
-  <!-- GEÄNDERT: Hinweistext -->
-  <div id="timeInfo" style="margin-top:10px; font-size:1.1em; color:#555;"></div>
-</div>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const weekParam = urlParams.get("woche");
+
     if (!weekParam) {
       window.addEventListener("DOMContentLoaded", () => {
         document.getElementById("drawButton").style.display = "none";
@@ -137,8 +127,9 @@
     } else {
       window.onload = () => {
         document.getElementById("weekDisplay").textContent = "Woche: " + weekParam;
+
         const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
-        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
+        const supabaseKey = "DEIN_SUPABASE_KEY_HIER"; // Anon-Key
         const client = supabase.createClient(supabaseUrl, supabaseKey);
 
         function getToday() {
@@ -166,9 +157,26 @@
             : "No number yet";
 
           const btn = document.getElementById("drawButton");
-          btn.style.display = myNumber !== null ? "none" : "block";
+          const info = document.getElementById("timeInfo");
+
+          const now = new Date();
+          const currentHour = now.getHours();
+
+          if (currentHour < 12) {
+            btn.disabled = true;
+            info.textContent = "Nummernvergabe erst ab 12:00 Uhr möglich.";
+          } else {
+            if (myNumber !== null) {
+              btn.style.display = "none";
+              info.textContent = "";
+            } else {
+              btn.disabled = false;
+              info.textContent = "";
+            }
+          }
         }
 
+        // falls Daten nicht von heute sind -> reset
         if (myDate !== today) {
           localStorage.removeItem("myNumber");
           localStorage.removeItem("myDate");
@@ -179,82 +187,86 @@
 
         updateUI();
 
+        // GEÄNDERT: prüft jede Minute, ob es schon 12 Uhr ist
+        setInterval(updateUI, 60000);
+
         async function drawNumber() {
-  const deviceId = getDeviceId();
+          const now = new Date();
+          if (now.getHours() < 12) {
+            alert("Die Ausgabe der Nummern beginnt erst ab 12:00 Uhr.");
+            return;
+          }
 
-  const { data: existing, error: checkError } = await client
-    .from('queue')
-    .select('*')
-    .eq('date', today)
-    .eq('device_id', deviceId)
-    .limit(1);
+          const deviceId = getDeviceId();
 
-  if (checkError) {
-    alert("Error bei der Prüfung: " + checkError.message);
-    return;
-  }
+          const { data: existing, error: checkError } = await client
+            .from('queue')
+            .select('*')
+            .eq('date', today)
+            .eq('device_id', deviceId)
+            .limit(1);
 
-  if (existing.length > 0) {
-    alert("Du hast heute schon eine Nummer bekommen.");
-    return;
-  }
+          if (checkError) {
+            alert("Error bei der Prüfung: " + checkError.message);
+            return;
+          }
 
-  const maxNumber = 120;
+          if (existing.length > 0) {
+            alert("Du hast heute schon eine Nummer bekommen.");
+            return;
+          }
 
-  const { data: latest, error: readError } = await client
-    .from('queue')
-    .select('number')
-    .eq('date', today)
-    .order('number', { ascending: false })
-    .limit(1);
+          const maxNumber = 120;
+          const { data: latest, error: readError } = await client
+            .from('queue')
+            .select('number')
+            .eq('date', today)
+            .order('number', { ascending: false })
+            .limit(1);
 
-  if (readError) {
-    alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
-    return;
-  }
+          if (readError) {
+            alert("Fehler beim Lesen der letzten Nummer: " + readError.message);
+            return;
+          }
 
-  const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
+          const lastNumber = latest && latest.length > 0 ? latest[0].number : 0;
 
- 
-if (lastNumber >= maxNumber) {
-  const numberDisplay = document.getElementById("yourNumber");
-  numberDisplay.textContent = "We are full! Today no number anymore available - we can not change for you!";
-  numberDisplay.style.color = "hotpink";
-  numberDisplay.style.fontSize = "3em";
-  numberDisplay.style.fontFamily = "'Rubik', sans-serif";
+          if (lastNumber >= maxNumber) {
+            const numberDisplay = document.getElementById("yourNumber");
+            numberDisplay.textContent = "We are full! Today no number anymore available - we can not change for you!";
+            numberDisplay.style.color = "hotpink";
+            numberDisplay.style.fontSize = "3em";
+            numberDisplay.style.fontFamily = "'Rubik', sans-serif";
 
-  document.getElementById("timestamp").style.display = "none";
-  document.getElementById("drawButton").style.display = "none";
-  return;
-}
+            document.getElementById("timestamp").style.display = "none";
+            document.getElementById("drawButton").style.display = "none";
+            return;
+          }
 
+          const newNumber = lastNumber + 1;
+          const timestamp = new Date();
+          const isoString = timestamp.toISOString();
 
+          const { error: insertError } = await client
+            .from('queue')
+            .insert([{
+              number: newNumber,
+              date: today,
+              created_at: isoString,
+              device_id: deviceId
+            }]);
 
-  const newNumber = lastNumber + 1;
-  const timestamp = new Date();
-  const isoString = timestamp.toISOString();
-
-  const { error: insertError } = await client
-    .from('queue')
-    .insert([{
-      number: newNumber,
-      date: today,
-      created_at: isoString,
-      device_id: deviceId
-    }]);
-
-  if (!insertError) {
-    myNumber = newNumber;
-    myTime = timestamp.toLocaleTimeString();
-    localStorage.setItem("myNumber", myNumber);
-    localStorage.setItem("myDate", today);
-    localStorage.setItem("myTime", myTime);
-    updateUI();
-  } else {
-    alert("Fehler beim Einfügen: " + insertError.message);
-  }
-}
-
+          if (!insertError) {
+            myNumber = newNumber;
+            myTime = timestamp.toLocaleTimeString();
+            localStorage.setItem("myNumber", myNumber);
+            localStorage.setItem("myDate", today);
+            localStorage.setItem("myTime", myTime);
+            updateUI();
+          } else {
+            alert("Fehler beim Einfügen: " + insertError.message);
+          }
+        }
 
         document.getElementById("drawButton").addEventListener("click", drawNumber);
       };

@@ -154,15 +154,24 @@
             if (dayOfWeek !== 4) {
               numberDisplay.textContent = "Numbers can only be obtained on Thursdays after 12:00.";
               numberDisplay.style.fontSize = "2.5em";
+              numberDisplay.style.fontWeight = "400";
+              numberDisplay.style.webkitTextStroke = "0";
+              numberDisplay.style.textShadow = "none";
             } else if (currentHour < 12) {
               numberDisplay.textContent = "Distribution of numbers will not begin until 12:00.";
               numberDisplay.style.fontSize = "2.5em";
+              numberDisplay.style.fontWeight = "400";
+              numberDisplay.style.webkitTextStroke = "0";
+              numberDisplay.style.textShadow = "none";
             }
             document.getElementById("timestamp").textContent = "";
             info.textContent = "";
           } else {
             document.getElementById("yourNumber").textContent = myNumber || "--";
             document.getElementById("yourNumber").style.fontSize = "8em";
+            document.getElementById("yourNumber").style.fontWeight = "900";
+            document.getElementById("yourNumber").style.webkitTextStroke = "0.8px rgba(120,0,60,0.35)";
+            document.getElementById("yourNumber").style.textShadow = "0 2px 0 rgba(0,0,0,0.06), 0 6px 12px rgba(0,0,0,0.04)";
             document.getElementById("timestamp").textContent = myTime
               ? "You received a number at: " + myTime
               : "No number yet";

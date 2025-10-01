@@ -49,22 +49,21 @@
       cursor: pointer;
       transition: background-color 0.2s ease;
     }
-/* Neu oder anpassen */
-button:enabled {
-  background-color: #66ccff; /* hellblau aktiv */
-  color: white;
-}
+    button:enabled {
+      background-color: #66ccff;
+      color: white;
+    }
 
-button:hover:enabled {
-  background-color: #3399ff;
-}
+    button:hover:enabled {
+      background-color: #3399ff;
+    }
 
-button:disabled {
-  background-color: #cccccc; /* GRAU wenn disabled */
-  color: #666;
-  cursor: not-allowed;
-  opacity: 1; /* wichtig: kein halbtransparentes Hellblau, sondern klares Grau */
-}
+    button:disabled {
+      background-color: #cccccc;
+      color: #666;
+      cursor: not-allowed;
+      opacity: 1;
+    }
 
     
     .error-message {
@@ -88,7 +87,7 @@ button:disabled {
       </a>
     </div>
 
-    <div id="errorMessage" class="error-message" style="display: none;">Bitte nutze den offiziellen QR-Code mit Wochenkennung.</div>
+    <div id="errorMessage" class="error-message" style="display: none;">Please use the official QR code with week identifier.</div>
 
     <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
     <div class="number-display" id="yourNumber">--</div>
@@ -129,6 +128,13 @@ button:disabled {
           return id;
         }
 
+        function isThursdayAfter12() {
+          const now = new Date();
+          const dayOfWeek = now.getDay(); // 0=Sunday, 4=Thursday
+          const currentHour = now.getHours();
+          return dayOfWeek === 4 && currentHour >= 12;
+        }
+
         let myNumber = localStorage.getItem("myNumber");
         let myDate = localStorage.getItem("myDate");
         let myTime = localStorage.getItem("myTime");
@@ -136,6 +142,7 @@ button:disabled {
 
         function updateUI() {
           const now = new Date();
+          const dayOfWeek = now.getDay();
           const currentHour = now.getHours();
           const btn = document.getElementById("drawButton");
           const info = document.getElementById("timeInfo");
@@ -145,12 +152,16 @@ button:disabled {
             ? "You received a number at: " + myTime
             : "No number yet";
 
-          // vor 12 Uhr immer deaktivieren
-          if (currentHour < 12) {
+          // Prüfen ob Donnerstag nach 12
+          if (!isThursdayAfter12()) {
             btn.disabled = true;
-            info.textContent = "Distribution of numbers will not begin until 12:00.";
+            if (dayOfWeek !== 4) {
+              info.textContent = "Numbers can only be obtained on Thursdays after 12:00.";
+            } else if (currentHour < 12) {
+              info.textContent = "Distribution of numbers will not begin until 12:00.";
+            }
           } else {
-            // nach 12 Uhr: prüfen ob schon eine Nummer gezogen wurde
+            // Donnerstag nach 12: prüfen ob schon eine Nummer gezogen wurde
             if (myNumber !== null) {
               btn.style.display = "none";
               info.textContent = "";
@@ -176,9 +187,8 @@ button:disabled {
         setInterval(updateUI, 60000);
 
         async function drawNumber() {
-          const now = new Date();
-          if (now.getHours() < 12) {
-            alert("Die Ausgabe der Nummern beginnt erst ab 12:00 Uhr.");
+          if (!isThursdayAfter12()) {
+            alert("Numbers can only be obtained on Thursdays after 12:00.");
             return;
           }
 

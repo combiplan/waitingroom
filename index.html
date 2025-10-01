@@ -87,7 +87,7 @@
       </a>
     </div>
 
-    <div id="errorMessage" class="error-message" style="display: none;">Please use the official QR code</div>
+    <div id="errorMessage" class="error-message" style="display: none;">Please use the official QR code with week identifier.</div>
 
     <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 10px;"></div>
     <div class="number-display" id="yourNumber">--</div>
@@ -147,20 +147,25 @@
           const btn = document.getElementById("drawButton");
           const info = document.getElementById("timeInfo");
 
-          document.getElementById("yourNumber").textContent = myNumber || "--";
-          document.getElementById("timestamp").textContent = myTime
-            ? "You received a number at: " + myTime
-            : "No number yet";
-
           // Prüfen ob Donnerstag nach 12
           if (!isThursdayAfter12()) {
             btn.disabled = true;
+            const numberDisplay = document.getElementById("yourNumber");
             if (dayOfWeek !== 4) {
-              info.textContent = "Numbers can only be obtained on Thursdays after 12:00.";
+              numberDisplay.textContent = "Numbers can only be obtained on Thursdays after 12:00.";
+              numberDisplay.style.fontSize = "2.5em";
             } else if (currentHour < 12) {
-              info.textContent = "Distribution of numbers will not begin until 12:00.";
+              numberDisplay.textContent = "Distribution of numbers will not begin until 12:00.";
+              numberDisplay.style.fontSize = "2.5em";
             }
+            document.getElementById("timestamp").textContent = "";
+            info.textContent = "";
           } else {
+            document.getElementById("yourNumber").textContent = myNumber || "--";
+            document.getElementById("yourNumber").style.fontSize = "8em";
+            document.getElementById("timestamp").textContent = myTime
+              ? "You received a number at: " + myTime
+              : "No number yet";
             // Donnerstag nach 12: prüfen ob schon eine Nummer gezogen wurde
             if (myNumber !== null) {
               btn.style.display = "none";

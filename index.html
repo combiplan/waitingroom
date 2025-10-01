@@ -148,7 +148,7 @@ button:disabled {
           // vor 12 Uhr immer deaktivieren
           if (currentHour < 12) {
             btn.disabled = true;
-            info.textContent = "Nummernvergabe erst ab 12:00 Uhr möglich.";
+            info.textContent = "Distribution of numbers will not begin until 12:00.";
           } else {
             // nach 12 Uhr: prüfen ob schon eine Nummer gezogen wurde
             if (myNumber !== null) {

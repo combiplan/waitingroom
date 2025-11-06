@@ -109,7 +109,7 @@
     const now = new Date();
     const currentWeek = getWeekNumber(now);
     const currentYear = now.getFullYear();
-    const weekParam = `KW${currentWeek}-${currentYear}`;
+    const weekParam = `CW${currentWeek}-${currentYear}`;
 
     window.onload = () => {
       document.getElementById("weekDisplay").textContent = "Week: " + weekParam;

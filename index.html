@@ -227,7 +227,7 @@
           return;
         }
 
-        const maxNumber = 120;
+        const maxNumber = 200;
         const { data: latest, error: readError } = await client
           .from('queue')
           .select('number')

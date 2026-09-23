@@ -6,11 +6,11 @@ in `admin.html`:
 
 - **Weekly limit** – numbers above it are still issued, but the visitor sees a
   blinking warning: "Your number can not be considered. This week we change
-  for N persons. Please do not travel to L8."
+  for N persons (adults). Please do not travel to L8."
 - **Absolute maximum** – no numbers at all are issued above it.
 
 Before distribution starts (outside Thursday 12:00+), `index.html` and
-`monitor.html` announce "This week we change for N persons." – but only
+`monitor.html` announce "This week we change for N persons (adults)." – but only
 if the weekly limit is lower than the absolute maximum.
 
 If the limits cannot be read, both default to 200 (`limits.js`).

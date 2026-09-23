@@ -39,11 +39,11 @@ function limitAnnouncementText(limits) {
   if (limits.weeklyLimit >= limits.absoluteMax) {
     return null;
   }
-  return "This week we change for " + limits.weeklyLimit + " persons.";
+  return "This week we change for " + limits.weeklyLimit + " persons (adults).";
 }
 
 // Warning shown to people whose number is above the weekly limit.
 function limitWarningText(weeklyLimit) {
   return "Your number can not be considered. This week we change for "
-    + weeklyLimit + " persons. Please do not travel to L8.";
+    + weeklyLimit + " persons (adults). Please do not travel to L8.";
 }

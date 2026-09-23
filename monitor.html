@@ -18,7 +18,9 @@
     It refreshes every 5 seconds (REFRESH_MS).
 
     Outside the distribution window (Thursday from 12:00) it shows a notice
-    instead of the numbers, matching the rule in index.html.
+    instead of the numbers, matching the rule in index.html. If the team has
+    set a weekly limit below the absolute maximum, the notice is followed by
+    "This week we change only for N persons." (no blinking).
 
     Testing: append ?date=YYYY-MM-DD to the URL to show the figures for that
     day. This also skips the Thursday check. Example: monitor.html?date=2026-09-17
@@ -90,6 +92,13 @@
       color: hotpink;
       margin-top: 60px;
     }
+    /* Announcement of the weekly limit before distribution starts (no blinking) */
+    .announcement {
+      font-size: 3em;
+      font-weight: 700;
+      color: #d00000;
+      margin-top: 30px;
+    }
     .status {
       font-size: 1em;
       color: #999;
@@ -125,6 +134,7 @@
 
     <!-- Shown outside the distribution window -->
     <div class="notice" id="notice" style="display: none;"></div>
+    <div class="announcement" id="announcement" style="display: none;"></div>
 
     <div class="status" id="status"></div>
   </div>
@@ -168,7 +178,15 @@
       notice.style.display = "block";
     }
 
+    // Weekly-limit announcement under the notice; hidden when text is null
+    function showAnnouncement(text) {
+      const a = document.getElementById("announcement");
+      a.textContent = text || "";
+      a.style.display = text ? "block" : "none";
+    }
+
     function showPanels() {
+      document.getElementById("announcement").style.display = "none";
       document.getElementById("notice").style.display = "none";
       document.getElementById("panels").style.display = "flex";
       document.getElementById("limitDisplay").style.display = "block";
@@ -191,6 +209,7 @@
         showNotice(now.getDay() === 4
           ? "Distribution of numbers will begin at 12:00."
           : "Numbers are handed out on Thursdays from 12:00.");
+        showAnnouncement(limitAnnouncementText(await loadLimits(client)));
         setStatus("", false);
         return;
       }

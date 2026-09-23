@@ -83,6 +83,16 @@
       .limit-warning { animation: none; }
     }
 
+    /* Announcement of the weekly limit before distribution starts (no blinking) */
+    .limit-announcement {
+      display: none;
+      font-size: 1.6em;
+      font-weight: 700;
+      color: #d00000;
+      max-width: 700px;
+      margin: 10px auto 0;
+    }
+
     .error-message {
       font-size: 1.5em;
       color: red;
@@ -108,6 +118,7 @@
     <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: hotpink; font-weight: 700; margin-bottom: 10px;"></div>
     <div class="limit-warning" id="limitWarning"></div>
     <div class="number-display" id="yourNumber">--</div>
+    <div class="limit-announcement" id="limitAnnouncement"></div>
     <div class="timestamp" id="timestamp">No number yet</div>
 
     <button id="drawButton" disabled>Click to get a number</button>
@@ -169,6 +180,16 @@
           warning.style.display = "block";
         } else {
           warning.style.display = "none";
+        }
+
+        // Before distribution starts: announce the weekly limit, if one is set
+        const announcement = document.getElementById("limitAnnouncement");
+        const announcementText = limitAnnouncementText(limits);
+        if (!isThursdayAfter12() && announcementText) {
+          announcement.textContent = announcementText;
+          announcement.style.display = "block";
+        } else {
+          announcement.style.display = "none";
         }
       }
 

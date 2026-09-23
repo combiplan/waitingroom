@@ -32,6 +32,16 @@ async function loadLimits(client) {
   }
 }
 
+// Announcement shown before distribution starts (outside Thursday 12:00+).
+// Returns null when the team has not set a weekly limit below the absolute
+// maximum, i.e. there is nothing to announce.
+function limitAnnouncementText(limits) {
+  if (limits.weeklyLimit >= limits.absoluteMax) {
+    return null;
+  }
+  return "This week we change only for " + limits.weeklyLimit + " persons.";
+}
+
 // Warning shown to people whose number is above the weekly limit.
 function limitWarningText(weeklyLimit) {
   return "Your number can not be considered. This week we change only for "

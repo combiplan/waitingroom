@@ -84,14 +84,9 @@
     }
 
     /* "Numbers can only be obtained ..." text shown in place of the number
-       outside Thursday 12:00+. On phones it matches the announcement size. */
+       outside Thursday 12:00+ (phone size: see end of style block). */
     .number-display.closed-notice {
       font-size: 2em;
-    }
-    @media (max-width: 600px) {
-      .number-display.closed-notice {
-        font-size: 1.6em;
-      }
     }
 
     /* Announcement of the weekly limit before distribution starts (no blinking) */
@@ -110,13 +105,38 @@
       margin-top: 50px;
       font-family: 'Rubik', sans-serif;
     }
+
+    .logo {
+      max-width: 120px;
+      margin-bottom: 20px;
+    }
+
+    /* Phones: smaller spacing and text so the button stays visible without
+       scrolling (checked on iPhone 13 Pro, 390 x 664 visible in Safari).
+       Kept last so these rules override the ones above. */
+    @media (max-width: 600px) {
+      .container {
+        padding-top: 16px;
+      }
+      .logo {
+        max-width: 70px;
+        margin-bottom: 8px;
+      }
+      .number-display.closed-notice,
+      .limit-announcement {
+        font-size: 1.3em;
+      }
+      button {
+        font-size: 1.4em;
+      }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="limits.js"></script>
 </head>
 <body>
   <div class="container">
-    <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 20px;">
+    <img src="Logo Offen O Positiv.png" alt="Logo" class="logo">
     <h2>Waiting Room L8</h2>
 
     <p><strong>Welcome to our Card Exchange!</strong><br>Please consider that we change only once per Person.</p>

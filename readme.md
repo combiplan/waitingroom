@@ -5,7 +5,7 @@ Numbers are only issued on Thursdays from 12:00. The team sets two limits
 in `admin.html`:
 
 - **Weekly limit** – numbers above it are still issued, but the visitor sees a
-  blinking warning: "Your number can not be considered. This week we change
+  blinking warning: "Your number can not be considered. This week we can only change
   for N persons (adults). Please do not travel to L8."
 - **Absolute maximum** – no numbers at all are issued above it.
 

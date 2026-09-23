@@ -44,6 +44,6 @@ function limitAnnouncementText(limits) {
 
 // Warning shown to people whose number is above the weekly limit.
 function limitWarningText(weeklyLimit) {
-  return "Your number can not be considered. This week we change for "
+  return "Your number can not be considered. This week we can only change for "
     + weeklyLimit + " persons (adults). Please do not travel to L8.";
 }

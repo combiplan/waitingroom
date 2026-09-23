@@ -65,7 +65,24 @@
       opacity: 1;
     }
 
-    
+    /* Warning for numbers above the weekly limit (see limits.js).
+       Slow blink (1 s cycle) – deliberately calm, not a fast flash. */
+    .limit-warning {
+      display: none;
+      font-size: 1.6em;
+      font-weight: 700;
+      color: #d00000;
+      max-width: 700px;
+      margin: 10px auto 0;
+      animation: blink 1s ease-in-out infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0.2; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .limit-warning { animation: none; }
+    }
+
     .error-message {
       font-size: 1.5em;
       color: red;
@@ -74,6 +91,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="limits.js"></script>
 </head>
 <body>
   <div class="container">
@@ -88,6 +106,7 @@
     </div>
 
     <div class="week-display" id="weekDisplay" style="font-size: 1.5em; color: hotpink; font-weight: 700; margin-bottom: 10px;"></div>
+    <div class="limit-warning" id="limitWarning"></div>
     <div class="number-display" id="yourNumber">--</div>
     <div class="timestamp" id="timestamp">No number yet</div>
 
@@ -135,6 +154,22 @@
         const dayOfWeek = now.getDay(); // 0=Sunday, 4=Thursday
         const currentHour = now.getHours();
         return dayOfWeek === 4 && currentHour >= 12;
+      }
+
+      // Team-editable limits (limits.js); defaults until loaded
+      let limits = { ...DEFAULT_LIMITS, ok: false };
+
+      // Shows the blinking warning if the visitor's number is above the
+      // weekly limit. Uses the current limit, so if the team raises it,
+      // the warning disappears on the next refresh.
+      function updateWarning() {
+        const warning = document.getElementById("limitWarning");
+        if (isThursdayAfter12() && myNumber !== null && Number(myNumber) > limits.weeklyLimit) {
+          warning.textContent = limitWarningText(limits.weeklyLimit);
+          warning.style.display = "block";
+        } else {
+          warning.style.display = "none";
+        }
       }
 
       let myNumber = localStorage.getItem("myNumber");
@@ -186,6 +221,13 @@
             info.textContent = "";
           }
         }
+        updateWarning();
+      }
+
+      // Reloads the limits, then redraws
+      async function refreshLimits() {
+        limits = await loadLimits(client);
+        updateUI();
       }
 
       // Reset, falls nicht von heute
@@ -198,9 +240,10 @@
       }
 
       updateUI();
+      refreshLimits();
 
-      // prüft jede Minute erneut
-      setInterval(updateUI, 60000);
+      // prüft jede Minute erneut (inkl. aktueller Limits)
+      setInterval(refreshLimits, 60000);
 
       async function drawNumber() {
         if (!isThursdayAfter12()) {
@@ -227,7 +270,9 @@
           return;
         }
 
-        const maxNumber = 200;
+        // Current limits at the moment of drawing (absolute maximum set by the team)
+        limits = await loadLimits(client);
+        const maxNumber = limits.absoluteMax;
         const { data: latest, error: readError } = await client
           .from('queue')
           .select('number')

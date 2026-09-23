@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Waiting Room L8 – Team Settings</title>
+
+  <!--
+    admin.html – team page to set the waiting-number limits.
+
+      weekly_limit  numbers above this are still issued, but visitors see a
+                    blinking warning not to travel to L8 (index.html, enter.html)
+      absolute_max  no numbers at all are issued above this
+
+    Saving requires the team PIN. The PIN is checked inside Supabase by the
+    function set_limits (supabase/settings.sql); this page does not know the
+    PIN and grants no rights itself. After 5 wrong PINs, saving is blocked
+    for 15 minutes. The PIN is not stored in the browser.
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Rubik', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    .container {
+      padding: 30px 20px;
+    }
+    .box {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.08);
+      padding: 30px;
+      max-width: 420px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-top: 18px;
+    }
+    .hint {
+      font-size: 0.9em;
+      color: #777;
+      margin-top: 4px;
+    }
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      font-size: 1.2em;
+      font-family: inherit;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      font-size: 1.2em;
+      font-family: inherit;
+      font-weight: 700;
+      padding: 12px 24px;
+      margin-top: 24px;
+      width: 100%;
+      background-color: #66ccff;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    button:hover:enabled {
+      background-color: #3399ff;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .message {
+      margin-top: 18px;
+      min-height: 1.2em;
+      font-weight: 700;
+    }
+    .message.ok { color: #1a7f37; }
+    .message.error { color: #d00000; }
+    .meta {
+      font-size: 0.9em;
+      color: #777;
+      margin-top: 12px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div class="container">
+    <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 10px;">
+    <h2>Waiting Room L8 – Team Settings</h2>
+
+    <form class="box" id="settingsForm">
+      <label for="weeklyLimit">Weekly limit</label>
+      <input type="number" id="weeklyLimit" min="0" step="1" required>
+      <div class="hint">Numbers above this are still issued, but visitors see a warning not to travel to L8.</div>
+
+      <label for="absoluteMax">Absolute maximum</label>
+      <input type="number" id="absoluteMax" min="1" step="1" required>
+      <div class="hint">No numbers at all are issued above this.</div>
+
+      <label for="pin">Team PIN</label>
+      <input type="password" id="pin" inputmode="numeric" autocomplete="off" required>
+
+      <button type="submit" id="saveButton">Save</button>
+      <div class="message" id="saveMessage"></div>
+      <div class="meta" id="lastChange"></div>
+    </form>
+  </div>
+
+  <script>
+    // Same Supabase project and public key as index.html
+    const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    const $ = (id) => document.getElementById(id);
+
+    // Messages for the result codes of the database function set_limits
+    const RESULT_TEXT = {
+      ok:        null,  // built below with the saved values
+      wrong_pin: "Wrong PIN. After 5 wrong attempts, saving is blocked for 15 minutes.",
+      locked:    "Too many wrong PINs. Saving is blocked – please try again in 15 minutes.",
+      invalid:   "Invalid values. The weekly limit cannot be higher than the absolute maximum.",
+      no_pin:    "No team PIN has been set up yet (see readme.md)."
+    };
+
+    function setMessage(text, isError) {
+      $("saveMessage").textContent = text;
+      $("saveMessage").className = "message " + (isError ? "error" : "ok");
+    }
+
+    // Loads the current limits into the form (reading needs no PIN)
+    async function loadSettings() {
+      const { data, error } = await client
+        .from('settings')
+        .select('weekly_limit, absolute_max, updated_at')
+        .eq('id', 1)
+        .limit(1);
+      if (error || !data || data.length === 0) {
+        setMessage("Could not load settings: " + (error ? error.message : "no settings row"), true);
+        return;
+      }
+      $("weeklyLimit").value = data[0].weekly_limit;
+      $("absoluteMax").value = data[0].absolute_max;
+      $("lastChange").textContent = "Last change: "
+        + new Date(data[0].updated_at).toLocaleString("de-DE");
+    }
+
+    $("settingsForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const weeklyLimit = Number($("weeklyLimit").value);
+      const absoluteMax = Number($("absoluteMax").value);
+
+      if (!Number.isInteger(weeklyLimit) || weeklyLimit < 0 ||
+          !Number.isInteger(absoluteMax) || absoluteMax < 1) {
+        setMessage("Please enter whole numbers.", true);
+        return;
+      }
+      if (weeklyLimit > absoluteMax) {
+        setMessage(RESULT_TEXT.invalid, true);
+        return;
+      }
+
+      $("saveButton").disabled = true;
+      const { data, error } = await client.rpc('set_limits', {
+        p_pin: $("pin").value,
+        p_weekly_limit: weeklyLimit,
+        p_absolute_max: absoluteMax
+      });
+      $("saveButton").disabled = false;
+      $("pin").value = "";
+
+      if (error) {
+        setMessage("Not saved: " + error.message, true);
+        return;
+      }
+      if (data !== "ok") {
+        setMessage(RESULT_TEXT[data] || ("Not saved: " + data), true);
+        return;
+      }
+      setMessage("Saved. Weekly limit " + weeklyLimit + ", absolute maximum " + absoluteMax + ".", false);
+      await loadSettings();
+    });
+
+    loadSettings();
+  </script>
+</body>
+</html>

@@ -9,6 +9,7 @@
     monitor.html – read-only display for the monitor in the waiting room.
 
     Shows, for today:
+      - the weekly limit set by the team (admin.html, via limits.js)
       - how many waiting numbers have been issued
       - the last number drawn and the time it was drawn
 
@@ -44,6 +45,12 @@
       color: hotpink;
       font-weight: 700;
       margin-bottom: 20px;
+    }
+    .limit-display {
+      font-size: 1.8em;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 25px;
     }
     /* Two panels side by side on a wide monitor, stacked on narrow screens */
     .panels {
@@ -93,6 +100,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="limits.js"></script>
 </head>
 <body>
   <div class="container">
@@ -101,6 +109,7 @@
     <div class="week-display" id="weekDisplay"></div>
 
     <!-- Shown during the distribution window -->
+    <div class="limit-display" id="limitDisplay"></div>
     <div class="panels" id="panels">
       <div class="panel">
         <div class="label">Numbers issued</div>
@@ -153,6 +162,7 @@
 
     function showNotice(text) {
       document.getElementById("panels").style.display = "none";
+      document.getElementById("limitDisplay").style.display = "none";
       const notice = document.getElementById("notice");
       notice.textContent = text;
       notice.style.display = "block";
@@ -161,6 +171,7 @@
     function showPanels() {
       document.getElementById("notice").style.display = "none";
       document.getElementById("panels").style.display = "flex";
+      document.getElementById("limitDisplay").style.display = "block";
     }
 
     function setStatus(text, isError) {
@@ -201,7 +212,9 @@
         .order('number', { ascending: false })
         .limit(1);
 
-      const [countRes, lastRes] = await Promise.all([countQuery, lastQuery]);
+      const [countRes, lastRes, limits] = await Promise.all([countQuery, lastQuery, loadLimits(client)]);
+
+      document.getElementById("limitDisplay").textContent = "Limit this week: " + limits.weeklyLimit;
 
       if (countRes.error || lastRes.error) {
         const err = countRes.error || lastRes.error;

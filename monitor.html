@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waiting Room L8 – Monitor</title>
+
+  <!--
+    monitor.html – read-only display for the monitor in the waiting room.
+
+    Shows, for today:
+      - how many waiting numbers have been issued
+      - the last number drawn and the time it was drawn
+
+    Data comes from the same Supabase table "queue" that index.html writes to.
+    The page only reads; it never inserts or changes rows.
+    It refreshes every 5 seconds (REFRESH_MS).
+
+    Outside the distribution window (Thursday from 12:00) it shows a notice
+    instead of the numbers, matching the rule in index.html.
+
+    Testing: append ?date=YYYY-MM-DD to the URL to show the figures for that
+    day. This also skips the Thursday check. Example: monitor.html?date=2026-09-17
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Rubik', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    .container {
+      padding: 30px 20px;
+    }
+    .week-display {
+      font-size: 1.8em;
+      color: hotpink;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    /* Two panels side by side on a wide monitor, stacked on narrow screens */
+    .panels {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+    }
+    .panel {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.08);
+      padding: 30px 40px;
+      min-width: 320px;
+    }
+    .label {
+      font-size: 2em;
+      font-weight: 700;
+      color: #555;
+    }
+    .big-number {
+      font-size: 10em;
+      line-height: 1.1;
+      margin: 10px 0;
+      color: hotpink;
+      font-weight: 900;
+      -webkit-text-stroke: 0.8px rgba(120,0,60,0.35);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.06), 0 6px 12px rgba(0,0,0,0.04);
+    }
+    .sub {
+      font-size: 1.6em;
+      color: #666;
+      min-height: 1.2em;
+    }
+    .notice {
+      font-size: 3em;
+      color: hotpink;
+      margin-top: 60px;
+    }
+    .status {
+      font-size: 1em;
+      color: #999;
+      margin-top: 30px;
+    }
+    .status.error {
+      color: red;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div class="container">
+    <img src="Logo Offen O Positiv.png" alt="Logo" style="max-width: 120px; margin-bottom: 10px;">
+    <h2>Waiting Room L8</h2>
+    <div class="week-display" id="weekDisplay"></div>
+
+    <!-- Shown during the distribution window -->
+    <div class="panels" id="panels">
+      <div class="panel">
+        <div class="label">Numbers issued</div>
+        <div class="big-number" id="issuedCount">--</div>
+        <div class="sub">&nbsp;</div>
+      </div>
+      <div class="panel">
+        <div class="label">Last number drawn</div>
+        <div class="big-number" id="lastNumber">--</div>
+        <div class="sub" id="lastTime"></div>
+      </div>
+    </div>
+
+    <!-- Shown outside the distribution window -->
+    <div class="notice" id="notice" style="display: none;"></div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script>
+    const REFRESH_MS = 5000;
+
+    // Same Supabase project and public key as index.html
+    const supabaseUrl = "https://anjuypoheypwalafesgl.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuanV5cG9oZXlwd2FsYWZlc2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMzg0OTQsImV4cCI6MjA2NDYxNDQ5NH0.Xmm95V8eTMTkPXmnT73iKc--Oryn9Z_RJXBrANhjnwQ";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Optional test override: ?date=YYYY-MM-DD
+    const dateOverride = new URLSearchParams(location.search).get("date");
+
+    // ISO 8601 calendar week (same as index.html)
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    // "Today" as index.html stores it in the "date" column (UTC date)
+    function getToday() {
+      return dateOverride || new Date().toISOString().split('T')[0];
+    }
+
+    // Distribution window: Thursday from 12:00 local time (same rule as index.html)
+    function isThursdayAfter12() {
+      const now = new Date();
+      return now.getDay() === 4 && now.getHours() >= 12;
+    }
+
+    function showNotice(text) {
+      document.getElementById("panels").style.display = "none";
+      const notice = document.getElementById("notice");
+      notice.textContent = text;
+      notice.style.display = "block";
+    }
+
+    function showPanels() {
+      document.getElementById("notice").style.display = "none";
+      document.getElementById("panels").style.display = "flex";
+    }
+
+    function setStatus(text, isError) {
+      const s = document.getElementById("status");
+      s.textContent = text;
+      s.className = isError ? "status error" : "status";
+    }
+
+    // Reads today's count and the most recent entry, then updates the screen.
+    // On error the last shown figures stay on screen and a red note appears.
+    async function refresh() {
+      const now = new Date();
+      document.getElementById("weekDisplay").textContent =
+        "Week: CW" + getWeekNumber(now) + "-" + now.getFullYear();
+
+      if (!dateOverride && !isThursdayAfter12()) {
+        showNotice(now.getDay() === 4
+          ? "Distribution of numbers will begin at 12:00."
+          : "Numbers are handed out on Thursdays from 12:00.");
+        setStatus("", false);
+        return;
+      }
+      showPanels();
+
+      const today = getToday();
+
+      // Count of rows for today (head: true = no rows transferred, only the count)
+      const countQuery = client
+        .from('queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('date', today);
+
+      // Highest number today, with the time it was drawn
+      const lastQuery = client
+        .from('queue')
+        .select('number, created_at')
+        .eq('date', today)
+        .order('number', { ascending: false })
+        .limit(1);
+
+      const [countRes, lastRes] = await Promise.all([countQuery, lastQuery]);
+
+      if (countRes.error || lastRes.error) {
+        const err = countRes.error || lastRes.error;
+        setStatus("Connection problem – retrying (" + err.message + ")", true);
+        return;
+      }
+
+      document.getElementById("issuedCount").textContent = countRes.count ?? 0;
+
+      if (lastRes.data.length > 0) {
+        const last = lastRes.data[0];
+        document.getElementById("lastNumber").textContent = last.number;
+        document.getElementById("lastTime").textContent =
+          "at " + new Date(last.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      } else {
+        document.getElementById("lastNumber").textContent = "--";
+        document.getElementById("lastTime").textContent = "No number drawn yet";
+      }
+
+      setStatus("Updated " + now.toLocaleTimeString("de-DE"), false);
+    }
+
+    // Network failures (e.g. offline) must not stop the refresh loop
+    async function safeRefresh() {
+      try {
+        await refresh();
+      } catch (e) {
+        setStatus("Connection problem – retrying (" + e.message + ")", true);
+      }
+    }
+
+    safeRefresh();
+    setInterval(safeRefresh, REFRESH_MS);
+  </script>
+</body>
+</html>

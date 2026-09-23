@@ -6,7 +6,7 @@ in `admin.html`:
 
 - **Weekly limit** – numbers above it are still issued, but the visitor sees a
   blinking warning: "Your number can not be considered. This week we change
-  only for N persons. Please do not travel to L8."
+  for N persons. Please do not travel to L8."
 - **Absolute maximum** – no numbers at all are issued above it.
 
 Before distribution starts (outside Thursday 12:00+), `index.html` and

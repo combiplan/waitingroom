@@ -39,7 +39,7 @@ function limitAnnouncementText(limits) {
   if (limits.weeklyLimit >= limits.absoluteMax) {
     return null;
   }
-  return "This week we change only for " + limits.weeklyLimit + " persons.";
+  return "This week we change for " + limits.weeklyLimit + " persons.";
 }
 
 // Warning shown to people whose number is above the weekly limit.

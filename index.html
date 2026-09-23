@@ -83,6 +83,17 @@
       .limit-warning { animation: none; }
     }
 
+    /* "Numbers can only be obtained ..." text shown in place of the number
+       outside Thursday 12:00+. On phones it matches the announcement size. */
+    .number-display.closed-notice {
+      font-size: 2em;
+    }
+    @media (max-width: 600px) {
+      .number-display.closed-notice {
+        font-size: 1.6em;
+      }
+    }
+
     /* Announcement of the weekly limit before distribution starts (no blinking) */
     .limit-announcement {
       display: none;
@@ -211,13 +222,15 @@
           const numberDisplay = document.getElementById("yourNumber");
           if (dayOfWeek !== 4) {
             numberDisplay.textContent = "Numbers can only be obtained on Thursdays after 12:00.";
-            numberDisplay.style.fontSize = "2em";
+            numberDisplay.classList.add("closed-notice");
+            numberDisplay.style.fontSize = "";
             numberDisplay.style.fontWeight = "400";
             numberDisplay.style.webkitTextStroke = "0";
             numberDisplay.style.textShadow = "none";
           } else if (currentHour < 12) {
             numberDisplay.textContent = "Distribution of numbers will not begin until 12:00.";
-            numberDisplay.style.fontSize = "2em";
+            numberDisplay.classList.add("closed-notice");
+            numberDisplay.style.fontSize = "";
             numberDisplay.style.fontWeight = "400";
             numberDisplay.style.webkitTextStroke = "0";
             numberDisplay.style.textShadow = "none";
@@ -226,6 +239,7 @@
           info.textContent = "";
         } else {
           document.getElementById("yourNumber").textContent = myNumber || "--";
+          document.getElementById("yourNumber").classList.remove("closed-notice");
           document.getElementById("yourNumber").style.fontSize = "8em";
           document.getElementById("yourNumber").style.fontWeight = "900";
           document.getElementById("yourNumber").style.webkitTextStroke = "0.8px rgba(120,0,60,0.35)";

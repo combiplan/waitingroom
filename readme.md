@@ -10,7 +10,7 @@ in `admin.html`:
 - **Absolute maximum** – no numbers at all are issued above it.
 
 Before distribution starts (outside Thursday 12:00+), `index.html` and
-`monitor.html` announce "This week we change only for N persons." – but only
+`monitor.html` announce "This week we change for N persons." – but only
 if the weekly limit is lower than the absolute maximum.
 
 If the limits cannot be read, both default to 200 (`limits.js`).
